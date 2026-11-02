@@ -11,6 +11,7 @@ pub mod intel;
 pub mod logs;
 pub mod mining;
 pub mod skills;
+pub mod store;
 pub mod universe;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
