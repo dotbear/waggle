@@ -51,6 +51,9 @@ pub enum Command {
     SyncCharacters,
     MiningStart,
     MiningStop,
+    /// Hold back notifications for this long, or resume them with `None`.
+    /// Everything is still recorded and shown in the window.
+    PauseAlerts(Option<Duration>),
 }
 
 /// A mining session with no yield for this long has ended: one trip, one
@@ -162,6 +165,7 @@ async fn run(
     let notifier = Notifier::with_sink(Desktop::detect(), config.notifications.privacy)
         .delivering(config.notifications.enabled);
     let mut alert_policy = AlertPolicy::new();
+    let mut paused_until: Option<chrono::DateTime<Utc>> = None;
     let mut mining = MiningService::restore(&store, roots.clone(), Utc::now().timestamp())?;
     // Waggle's meter starts by itself. Turned on once, the first time, so
     // someone who later switches it off stays switched off.
@@ -202,7 +206,8 @@ async fn run(
     let view = |presence_state: &[CharacterPresence],
                 jabber_connection: &Option<ConnectionStatus>,
                 mining: &MiningService,
-                seen_channels: &BTreeSet<String>|
+                seen_channels: &BTreeSet<String>,
+                paused_until: Option<chrono::DateTime<Utc>>|
      -> Result<ViewModel> {
         let now = Utc::now();
         let mut pings = store.recent_jabber_pings(30)?;
@@ -234,10 +239,17 @@ async fn run(
             jabber_ok,
             setup_hint: setup_hint(&config, &roots, presence_state, jabber_configured),
             status: format!(
-                "{matched} of {} intel channels · {} pilot{}",
+                "{matched} of {} intel channels · {} pilot{}{}",
                 config.intel.channels.len(),
                 presence_state.len(),
-                if presence_state.len() == 1 { "" } else { "s" }
+                if presence_state.len() == 1 { "" } else { "s" },
+                paused_until
+                    .filter(|until| *until > now)
+                    .map(|until| format!(
+                        " · alerts paused until {}",
+                        until.with_timezone(&chrono::Local).format("%H:%M")
+                    ))
+                    .unwrap_or_default()
             ),
             intel: store.recent_intel_alerts(30)?,
             pings,
@@ -250,6 +262,7 @@ async fn run(
         &jabber_connection,
         &mining,
         &seen_channels,
+        paused_until,
     )?);
 
     let mut log_poll = interval(Duration::from_millis(500));
@@ -290,9 +303,13 @@ async fn run(
                                     character.character_id == alert.character_id
                                         && character.docked == Some(false)
                                 });
-                                match notifier.intel(&alert, exposed) {
-                                    Ok(()) => store.mark_intel_notified(alert.id)?,
-                                    Err(error) => warn!(%error, "Could not show the intel notification"),
+                                if is_paused(paused_until) {
+                                    store.mark_intel_notified(alert.id)?;
+                                } else {
+                                    match notifier.intel(&alert, exposed) {
+                                        Ok(()) => store.mark_intel_notified(alert.id)?,
+                                        Err(error) => warn!(%error, "Could not show the intel notification"),
+                                    }
                                 }
                                 info!(system = alert.system_name, jumps = alert.distance, "Intel alert");
                                 changed = true;
@@ -316,7 +333,7 @@ async fn run(
                     store.reconcile_skill_queue(*character_id, &entries)?;
                 }
                 if !polled.skill_queues_refreshed.is_empty() {
-                    deliver_due_skill_notifications(&store, &notifier)?;
+                    deliver_due_skill_notifications(&store, &notifier, is_paused(paused_until))?;
                 }
                 if polled.changed || !polled.skill_queues_refreshed.is_empty() {
                     let mut fresh = polled.characters;
@@ -367,7 +384,7 @@ async fn run(
             _ = heartbeat.tick() => {
                 store.prune_jabber_pings_before(Utc::now() - TimeDelta::hours(48))?;
                 persist_log_checkpoints(&store, &log_monitor);
-                deliver_due_skill_notifications(&store, &notifier)?;
+                deliver_due_skill_notifications(&store, &notifier, is_paused(paused_until))?;
                 // Ages and skill timers move with the clock.
                 attach_skill_queues(&store, &mut presence_state);
                 changed = true;
@@ -406,9 +423,13 @@ async fn run(
                         let muted = config.jabber.target_is_muted(ping.target.as_deref());
                         if let Some(stored) = store.record_jabber_ping(&ping, baseline || muted)? {
                             if !baseline && !muted {
-                                match notifier.ping(&stored) {
-                                    Ok(()) => store.mark_jabber_ping_notified(stored.id)?,
-                                    Err(error) => warn!(%error, "Could not show the ping notification"),
+                                if is_paused(paused_until) {
+                                    store.mark_jabber_ping_notified(stored.id)?;
+                                } else {
+                                    match notifier.ping(&stored) {
+                                        Ok(()) => store.mark_jabber_ping_notified(stored.id)?,
+                                        Err(error) => warn!(%error, "Could not show the ping notification"),
+                                    }
                                 }
                             }
                             changed = true;
@@ -451,6 +472,13 @@ async fn run(
                         }
                         changed = true;
                     }
+                    Some(Command::PauseAlerts(duration)) => {
+                        paused_until = duration.map(|duration| {
+                            Utc::now() + TimeDelta::from_std(duration).unwrap_or(TimeDelta::hours(1))
+                        });
+                        info!(?paused_until, "Alerts paused or resumed");
+                        changed = true;
+                    }
                     Some(Command::MiningStop) => {
                         if let Err(error) =
                             mining.command(&store, waggle_core::mining::Command::Stop, Utc::now().timestamp())
@@ -473,9 +501,15 @@ async fn run(
                 &jabber_connection,
                 &mining,
                 &seen_channels,
+                paused_until,
             )?);
         }
     }
+}
+
+/// Whether notifications are on hold right now.
+fn is_paused(until: Option<chrono::DateTime<Utc>>) -> bool {
+    until.is_some_and(|until| Utc::now() < until)
 }
 
 fn interval(period: Duration) -> time::Interval {
@@ -595,9 +629,23 @@ fn name_skills(universe: &Universe, entries: &mut [SkillQueueEntry]) {
     }
 }
 
-fn deliver_due_skill_notifications(store: &Store, notifier: &Notifier<Desktop>) -> Result<()> {
+fn deliver_due_skill_notifications(
+    store: &Store,
+    notifier: &Notifier<Desktop>,
+    paused: bool,
+) -> Result<()> {
     let due = store.due_skill_notifications(Utc::now())?;
     if due.is_empty() {
+        return Ok(());
+    }
+    if paused {
+        for completion in &due {
+            store.mark_skill_notified(
+                completion.character_id,
+                completion.skill_id,
+                completion.level,
+            )?;
+        }
         return Ok(());
     }
     let now = Utc::now();

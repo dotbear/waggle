@@ -11,6 +11,8 @@ pub enum TrayAction {
     Open,
     Settings,
     RefreshPaps,
+    PauseAlerts,
+    ResumeAlerts,
     Quit,
 }
 
@@ -32,6 +34,8 @@ mod windows {
         open: MenuId,
         settings: MenuId,
         refresh: MenuId,
+        pause: MenuId,
+        resume: MenuId,
         quit: MenuId,
     }
 
@@ -40,12 +44,17 @@ mod windows {
             let menu = Menu::new();
             let open = MenuItem::new("Open Waggle", true, None);
             let settings = MenuItem::new("Settings…", true, None);
+            let pause = MenuItem::new("Pause alerts for 1 hour", true, None);
+            let resume = MenuItem::new("Resume alerts", true, None);
             let refresh = MenuItem::new("Refresh PAPs", true, None);
             let quit = MenuItem::new("Quit", true, None);
             menu.append_items(&[
                 &open,
                 &settings,
                 &refresh,
+                &PredefinedMenuItem::separator(),
+                &pause,
+                &resume,
                 &PredefinedMenuItem::separator(),
                 &quit,
             ])
@@ -60,6 +69,8 @@ mod windows {
                 icon,
                 open: open.id().clone(),
                 settings: settings.id().clone(),
+                pause: pause.id().clone(),
+                resume: resume.id().clone(),
                 refresh: refresh.id().clone(),
                 quit: quit.id().clone(),
             })
@@ -73,6 +84,10 @@ mod windows {
                     actions.push(TrayAction::Open);
                 } else if event.id == self.settings {
                     actions.push(TrayAction::Settings);
+                } else if event.id == self.pause {
+                    actions.push(TrayAction::PauseAlerts);
+                } else if event.id == self.resume {
+                    actions.push(TrayAction::ResumeAlerts);
                 } else if event.id == self.refresh {
                     actions.push(TrayAction::RefreshPaps);
                 } else if event.id == self.quit {

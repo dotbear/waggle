@@ -221,6 +221,10 @@ fn run() -> Result<()> {
                             }
                         }
                         TrayAction::RefreshPaps => send(Command::RefreshPaps),
+                        TrayAction::PauseAlerts => {
+                            send(Command::PauseAlerts(Some(Duration::from_secs(3600))))
+                        }
+                        TrayAction::ResumeAlerts => send(Command::PauseAlerts(None)),
                         TrayAction::Quit => {
                             info!("Quit from the tray");
                             let _ = slint::quit_event_loop();
