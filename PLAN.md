@@ -154,6 +154,23 @@ licence is GPL-3.0. What each spike taught is in
 
 ## 4. Phase 1: extract `waggle-core` from EVEmarchy
 
+**Status 2026-11-02: done.** waggle-core holds logs and log discovery, intel
+and alerts, universe and bridges, Directorbot parsing and the Jabber worker,
+ESI login and presence, the store, the mining meter, skills, notifications'
+wording, the RIFT importer, and the keyring (Secret Service, Windows
+Credential Manager, in-memory). EVEmarchy builds on it from the
+`waggle-core` branch, its behaviour unchanged except the RIFT identity
+option, which was removed. 205 core tests pass on Linux and on Windows 11.
+Departures from the plan below:
+
+- Industry polling and the industry tables came along behind off-by-default
+  switches (`IndustryPolling`, `store::Extras`) rather than being untangled
+  first; they leave with industry for Nex Industries.
+- The front end supplies an `AppIdentity` (name, version, website, required
+  ESI scopes, relink hint), used by SSO, ESI's User-Agent, the login page and
+  Jabber.
+- Beehive's room became a generic `WatchedRoom` on the Jabber worker.
+
 The aim is **zero behaviour change in EVEmarchy**. When this phase is done,
 EVEmarchy builds against the core, its whole test suite passes, and
 `waggle-core` builds and passes its tests on Windows CI.

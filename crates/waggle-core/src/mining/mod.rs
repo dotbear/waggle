@@ -202,7 +202,7 @@ impl MiningService {
                             if files::modified_seconds(&meta)
                                 .is_ok_and(|modified| modified >= self.observed - 86400)
                             {
-                                candidates.push(fs::canonicalize(path)?);
+                                candidates.push(dunce::canonicalize(path)?);
                             }
                         }
                     }
@@ -301,7 +301,7 @@ impl MiningService {
         let roots = self
             .roots()
             .into_iter()
-            .map(|r| fs::canonicalize(&r).unwrap_or(r))
+            .map(|r| dunce::canonicalize(&r).unwrap_or(r))
             .collect::<Vec<_>>();
         let mut changed = false;
         for path in paths {

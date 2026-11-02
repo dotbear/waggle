@@ -12,6 +12,9 @@ anyhow = "1.0.104"
 base64 = "0.22.1"
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "serde"] }
 directories = "6.0.0"
+# fs::canonicalize returns \\?\C:\... verbatim paths on Windows; dunce returns
+# the ordinary form when it is equivalent, and is fs::canonicalize elsewhere.
+dunce = "=1.0.5"
 getrandom = "0.4.3"
 httpdate = "1.0.3"
 jsonwebtoken = { version = "11.0.0", default-features = false, features = ["rust_crypto"] }

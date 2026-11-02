@@ -26,7 +26,7 @@ pub fn discover_roots(config: &LogsConfig, home_dir: &Path) -> Vec<PathBuf> {
         .into_iter()
         .filter_map(normalize_log_root)
         .filter(|path| is_eve_logs_root(path))
-        .map(|path| std::fs::canonicalize(&path).unwrap_or(path))
+        .map(|path| dunce::canonicalize(&path).unwrap_or(path))
         .collect::<BTreeSet<_>>()
         .into_iter()
         .collect()
@@ -109,7 +109,10 @@ mod tests {
             roots: vec![root.clone()],
         };
 
-        assert_eq!(discover_roots(&config, temp.path()), vec![root]);
+        assert_eq!(
+            discover_roots(&config, temp.path()),
+            vec![dunce::canonicalize(&root).unwrap()]
+        );
     }
 
     #[test]
@@ -122,7 +125,10 @@ mod tests {
             roots: vec![root.join("Chatlogs")],
         };
 
-        assert_eq!(discover_roots(&config, temp.path()), vec![root]);
+        assert_eq!(
+            discover_roots(&config, temp.path()),
+            vec![dunce::canonicalize(&root).unwrap()]
+        );
     }
 
     #[cfg(unix)]
@@ -143,7 +149,7 @@ mod tests {
 
         assert_eq!(
             discover_roots(&config, temp.path()),
-            vec![fs::canonicalize(&real).unwrap()]
+            vec![dunce::canonicalize(&real).unwrap()]
         );
     }
 
@@ -157,7 +163,10 @@ mod tests {
             roots: vec![PathBuf::from("~/custom/EVE/logs")],
         };
 
-        assert_eq!(discover_roots(&config, temp.path()), vec![root]);
+        assert_eq!(
+            discover_roots(&config, temp.path()),
+            vec![dunce::canonicalize(&root).unwrap()]
+        );
     }
 
     #[cfg(windows)]
