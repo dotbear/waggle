@@ -324,7 +324,13 @@ impl Setup {
                 for (name, regions) in imported.channels {
                     draft.intel.channels.insert(name, regions);
                 }
-                if let Some(jid) = imported.jabber_jid {
+                // RIFT keeps the username even when it has no password.
+                let jid = imported.jabber_jid.or_else(|| {
+                    imported
+                        .jabber_user
+                        .map(|user| format!("{user}@{JABBER_DOMAIN}"))
+                });
+                if let Some(jid) = jid {
                     draft.jabber.jid = Some(jid);
                     draft
                         .jabber
@@ -345,7 +351,8 @@ impl Setup {
                 );
                 for note in imported.notes {
                     summary.push(' ');
-                    summary.push_str(&note);
+                    summary.push_str(note.trim_end_matches('.'));
+                    summary.push('.');
                 }
                 summary.push_str(" Press Save to use it.");
                 window.set_rift_status(summary.into());

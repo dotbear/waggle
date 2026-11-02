@@ -50,6 +50,9 @@ pub struct Imported {
     pub bridges: usize,
     pub bridge_warnings: Vec<String>,
     pub jabber_jid: Option<String>,
+    /// RIFT's Jabber username, whether or not a password came with it, so a
+    /// front end can fill it in and ask only for the password.
+    pub jabber_user: Option<String>,
     pub jabber_password_stored: bool,
     /// Channel name to region hints, ready to paste into `config.toml`.
     pub channels: BTreeMap<String, Vec<String>>,
@@ -114,6 +117,10 @@ pub fn from_rift(
     }
 
     // --- jabber credential ---------------------------------------------------
+    imported.jabber_user = settings
+        .jabber_jid_local_part
+        .clone()
+        .filter(|local| !local.trim().is_empty());
     match (
         settings.jabber_jid_local_part.as_deref(),
         settings.jabber_password.as_deref(),
@@ -126,25 +133,25 @@ pub fn from_rift(
             // A malformed JID would be stored under a key the daemon never
             // looks up, so the credential would silently not be found.
             if domain.is_empty() || domain.contains('@') || domain.contains(char::is_whitespace) {
-                bail!("--jabber-domain must be a bare domain such as example.com");
+                bail!("the Jabber domain must be a bare domain such as example.com");
             }
             let jid = format!("{local}@{domain}");
             if !dry_run {
                 secrets
                     .store_jabber_password(&jid, &SecretString::from(password.to_owned()))
-                    .context("could not store the Jabber password in Secret Service")?;
+                    .context("could not store the Jabber password in the keyring")?;
                 imported.jabber_password_stored = true;
             }
             imported.jabber_jid = Some(jid);
         }
         (Some(local), Some(_), None) if !local.is_empty() => imported.notes.push(
-            "found a Jabber credential but no --jabber-domain, so it was skipped; \
-             pass the part after the @ of your Jabber account"
+            "found a Jabber credential but no Jabber domain, so it was skipped; \
+             give the part after the @ of your Jabber account (--jabber-domain)"
                 .to_owned(),
         ),
         _ => imported
             .notes
-            .push("RIFT has no stored Jabber credential to import".to_owned()),
+            .push("RIFT has no stored Jabber password to import.".to_owned()),
     }
 
     // --- intel channels ------------------------------------------------------
