@@ -1,0 +1,5 @@
+# Link the C runtime into Waggle's Windows binaries. A fresh Windows install
+# does not ship the Visual C++ redistributable (VCRUNTIME140.dll), and asking
+# a friend to install it first is the kind of setup Waggle exists to avoid.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
