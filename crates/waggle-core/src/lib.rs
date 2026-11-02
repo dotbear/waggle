@@ -7,6 +7,7 @@
 pub mod bridges;
 pub mod config;
 pub mod directorbot;
+pub mod files;
 pub mod intel;
 pub mod logs;
 pub mod mining;
