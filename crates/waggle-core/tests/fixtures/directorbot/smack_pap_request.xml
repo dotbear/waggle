@@ -1,0 +1,1 @@
+<message xmlns='jabber:client' to='directorbot@example.invalid' id='offline-pap-test' type='chat'><body>!me</body><active xmlns='http://jabber.org/protocol/chatstates'/></message>

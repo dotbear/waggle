@@ -13,6 +13,7 @@ pub mod esi;
 pub mod files;
 pub mod industry;
 pub mod intel;
+pub mod jabber;
 pub mod logs;
 pub mod mining;
 pub mod notify;
