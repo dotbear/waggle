@@ -4,8 +4,15 @@
 //! it on screen, with a sound per kind so intel can be told apart by ear
 //! without looking.
 
+use std::sync::OnceLock;
+
 use anyhow::Result;
 use waggle_core::notify::{Notification, NotificationSink};
+
+/// What clicking a toast does: set once at startup to bring the window up.
+/// Toasts report clicks on a thread of Windows' choosing, so this must be
+/// callable from anywhere.
+pub static ON_CLICK: OnceLock<Box<dyn Fn() + Send + Sync>> = OnceLock::new();
 
 /// The AppUserModelID Waggle runs and sends toasts under. Windows only shows
 /// a toast from an unpackaged program if a Start Menu shortcut carries this
@@ -69,6 +76,12 @@ impl NotificationSink for Desktop {
             } else {
                 Duration::Short
             });
+        toast = toast.on_activated(|_| {
+            if let Some(on_click) = ON_CLICK.get() {
+                on_click();
+            }
+            Ok(())
+        });
         if let Some(image) = notification.image.as_deref() {
             toast = toast.icon(
                 image,

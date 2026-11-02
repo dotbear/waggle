@@ -52,6 +52,6 @@ beforePackagingCommand = "cargo build --release -p waggle"
 binaries = [{ path = "waggle", main = true }]
 
 [package.metadata.packager.nsis]
-installerMode = "currentUser"
+installMode = "currentUser"
 # Offered as a checkbox when uninstalling, off by default.
 appdataPaths = ["$APPDATA/Waggle", "$LOCALAPPDATA/Waggle/data"]

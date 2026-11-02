@@ -137,6 +137,22 @@ fn run() -> Result<()> {
 
     window.show().context("could not show the window")?;
 
+    // Clicking a toast brings the window up, from whatever thread Windows
+    // reports the click on.
+    thread_local! {
+        static WINDOW: RefCell<Option<slint::Weak<AppWindow>>> = const { RefCell::new(None) };
+    }
+    WINDOW.with(|slot| *slot.borrow_mut() = Some(window.as_weak()));
+    let _ = toast::ON_CLICK.set(Box::new(|| {
+        let _ = slint::invoke_from_event_loop(|| {
+            WINDOW.with(|slot| {
+                if let Some(window) = slot.borrow().as_ref().and_then(slint::Weak::upgrade) {
+                    show_again(&window);
+                }
+            });
+        });
+    }));
+
     // The tray is created once the event loop runs, on this thread, and its
     // clicks are read by a timer the program keeps alive.
     thread_local! {
