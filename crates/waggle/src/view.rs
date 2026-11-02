@@ -316,4 +316,61 @@ mod tests {
         assert_eq!(remaining(now + TimeDelta::minutes(135), now), "2h 15m");
         assert_eq!(remaining(now + TimeDelta::hours(50), now), "2d 2h");
     }
+
+    fn ping_with_link(link: Option<&str>) -> JabberPing {
+        let now = Utc::now();
+        JabberPing {
+            id: 1,
+            occurred_at: now,
+            received_at: now,
+            from: "directorbot@example.invalid".to_owned(),
+            source: None,
+            sender: None,
+            target: None,
+            summary: "Fleet".to_owned(),
+            description: String::new(),
+            fc: None,
+            fleet: Some("Home Defence".to_owned()),
+            formup: None,
+            pap_type: Some("Strategic".to_owned()),
+            comms: Some("Op 1".to_owned()),
+            comms_link: link.map(str::to_owned),
+            comms_target: None,
+            doctrine: None,
+            body: String::new(),
+            fc_portrait: None,
+            muted: false,
+            fleet_index: 1,
+            fleet_count: 1,
+        }
+    }
+
+    #[test]
+    fn only_web_links_from_a_ping_are_clickable() {
+        let now = Utc::now();
+        assert_eq!(
+            ping_row(
+                &ping_with_link(Some("https://example.invalid/c/op.html")),
+                now
+            )
+            .link,
+            "https://example.invalid/c/op.html"
+        );
+        for unsafe_link in [
+            "mumble://example.invalid",
+            "file:///C:/Windows",
+            "javascript:alert(1)",
+        ] {
+            assert_eq!(ping_row(&ping_with_link(Some(unsafe_link)), now).link, "");
+        }
+        assert_eq!(ping_row(&ping_with_link(None), now).link, "");
+    }
+
+    #[test]
+    fn a_strategic_ping_is_marked_strategic() {
+        let row = ping_row(&ping_with_link(None), Utc::now());
+        assert!(row.strategic);
+        assert_eq!(row.pap_type, "Strategic");
+        assert_eq!(row.title, "Home Defence");
+    }
 }
