@@ -27,7 +27,7 @@ waggle-core = { path = "../waggle-core" }
 [target.'cfg(windows)'.dependencies]
 tauri-winrt-notification = "=0.8.1"
 tray-icon = "=0.26.1"
-windows-sys = { version = "=0.61.2", features = ["Win32_UI_Shell"] }
+windows-sys = { version = "=0.61.2", features = ["Win32_System_StationsAndDesktops", "Win32_UI_Shell"] }
 
 [dev-dependencies]
 png = "=0.18.1"

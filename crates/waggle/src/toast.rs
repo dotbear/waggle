@@ -57,6 +57,26 @@ fn app_id_for_toasts() -> String {
 }
 
 impl NotificationSink for Desktop {
+    /// For "hide message text while locked". While the workstation is locked
+    /// the secure desktop has the input, and switching to the user's input
+    /// desktop fails; that is the usual test, and it needs no permissions.
+    #[cfg(windows)]
+    fn screen_locked(&self) -> bool {
+        use windows_sys::Win32::System::StationsAndDesktops::{
+            CloseDesktop, DESKTOP_SWITCHDESKTOP, OpenInputDesktop, SwitchDesktop,
+        };
+        // SAFETY: plain Win32 calls; the handle is closed before returning.
+        unsafe {
+            let desktop = OpenInputDesktop(0, 0, DESKTOP_SWITCHDESKTOP);
+            if desktop.is_null() {
+                return true;
+            }
+            let switched = SwitchDesktop(desktop) != 0;
+            CloseDesktop(desktop);
+            !switched
+        }
+    }
+
     #[cfg(windows)]
     fn deliver(&self, notification: &Notification) -> Result<()> {
         use tauri_winrt_notification::{Duration, LoopableSound, Sound, Toast};
