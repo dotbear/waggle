@@ -1,0 +1,47 @@
+// Waggle's colours and type sizes.
+
+export global Theme {
+    out property <color> background: #0f1114;
+    out property <color> panel: #171a1f;
+    out property <color> raised: #1e2228;
+    out property <color> line: #262b33;
+    out property <color> text: #d7dbe0;
+    out property <color> dim: #8a929c;
+    out property <color> faint: #5c636d;
+    out property <color> gold: #e0a83a;
+    out property <color> red: #e5534b;
+    out property <color> green: #4caf7a;
+    out property <color> blue: #5aa0e6;
+    out property <length> small: 11px;
+    out property <length> body: 12px;
+    out property <length> heading: 13px;
+}
+
+/// A button in Waggle's colours: gold for the main action, dark otherwise.
+export component ActionButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary;
+    in property <bool> enabled: true;
+    callback clicked;
+    height: 28px;
+    min-width: label.preferred-width + 24px;
+    border-radius: 4px;
+    background: !root.enabled ? Theme.raised.darker(0.2)
+        : root.primary ? (touch.has-hover ? Theme.gold.brighter(0.15) : Theme.gold)
+        : (touch.has-hover ? Theme.line : Theme.raised);
+    border-width: root.primary ? 0 : 1px;
+    border-color: Theme.line;
+    label := Text {
+        text: root.text;
+        color: !root.enabled ? Theme.faint : root.primary ? Theme.background : Theme.text;
+        font-size: Theme.body;
+        font-weight: root.primary ? 700 : 500;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}

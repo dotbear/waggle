@@ -74,7 +74,7 @@ pub fn from_rift(
     settings_file: &Path,
     jump_bridges_file: &Path,
     jabber_domain: Option<&str>,
-    secrets: &impl JabberPasswordStore,
+    secrets: &(impl JabberPasswordStore + ?Sized),
     dry_run: bool,
 ) -> Result<Imported> {
     if !settings_file.exists() {

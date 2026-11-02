@@ -4,6 +4,7 @@
 use std::{
     cell::RefCell,
     fs::File,
+    rc::Rc,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -18,7 +19,7 @@ use waggle::{
     config::Config,
     engine::{self, Command},
     paths::AppPaths,
-    toast,
+    setup, toast,
     tray::{Tray, TrayAction},
     view,
 };
@@ -50,8 +51,9 @@ fn run() -> Result<()> {
         return Ok(());
     }
 
+    let first_run = !paths.config_file.exists();
     let config = Config::load(&paths.config_file)?;
-    if !paths.config_file.exists() {
+    if first_run {
         // Written once, so there is a file to find and edit.
         if let Err(error) = config.save(&paths.config_file) {
             warn!(%error, "Could not write the default settings");
@@ -65,28 +67,61 @@ fn run() -> Result<()> {
         .on_close_requested(|| CloseRequestResponse::HideWindow);
 
     let tooltip = Arc::new(Mutex::new(String::from("Waggle")));
-    let commands = {
+    // The engine is restarted with new settings when setup saves; whoever
+    // sends it commands goes through this one handle.
+    let start_engine = {
         let weak = window.as_weak();
         let tooltip = Arc::clone(&tooltip);
-        engine::spawn(paths.clone(), config, move |view| {
-            if let Ok(mut text) = tooltip.lock() {
-                *text = view.tooltip();
-            }
+        let paths = paths.clone();
+        move |config: Config| {
             let weak = weak.clone();
-            let _ = slint::invoke_from_event_loop(move || {
-                if let Some(window) = weak.upgrade() {
-                    view::apply(&window, &view);
+            let tooltip = Arc::clone(&tooltip);
+            engine::spawn(paths.clone(), config, move |view| {
+                if let Ok(mut text) = tooltip.lock() {
+                    *text = view.tooltip();
                 }
-            });
-        })
+                let weak = weak.clone();
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(window) = weak.upgrade() {
+                        view::apply(&window, &view);
+                    }
+                });
+            })
+        }
+    };
+    let commands = Rc::new(RefCell::new(start_engine(config.clone())));
+    let send = {
+        let commands = Rc::clone(&commands);
+        move |command: Command| {
+            let _ = commands.borrow().send(command);
+        }
     };
 
     {
-        let commands = commands.clone();
-        window.on_refresh_paps(move || {
-            let _ = commands.send(Command::RefreshPaps);
-        });
+        let send = send.clone();
+        window.on_refresh_paps(move || send(Command::RefreshPaps));
     }
+    setup::install(
+        &window,
+        paths.clone(),
+        &config,
+        first_run,
+        setup::Hooks {
+            restart: Box::new({
+                let commands = Rc::clone(&commands);
+                move |config| {
+                    info!("Restarting the engine with new settings");
+                    // Replacing the sender drops the old one, which ends the
+                    // old engine's loop; the new one starts fresh.
+                    *commands.borrow_mut() = start_engine(config);
+                }
+            }),
+            characters_changed: Box::new({
+                let send = send.clone();
+                move || send(Command::SyncCharacters)
+            }),
+        },
+    );
 
     window.show().context("could not show the window")?;
 
@@ -125,9 +160,7 @@ fn run() -> Result<()> {
                                 show_again(&window);
                             }
                         }
-                        TrayAction::RefreshPaps => {
-                            let _ = commands.send(Command::RefreshPaps);
-                        }
+                        TrayAction::RefreshPaps => send(Command::RefreshPaps),
                         TrayAction::Quit => {
                             info!("Quit from the tray");
                             let _ = slint::quit_event_loop();

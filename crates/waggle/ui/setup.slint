@@ -1,0 +1,285 @@
+// The setup view: everything Waggle needs from a person, in one place.
+
+import { CheckBox, ComboBox, LineEdit, ScrollView, SpinBox } from "std-widgets.slint";
+import { ActionButton, Theme } from "theme.slint";
+
+export struct CharacterItem {
+    name: string,
+    detail: string,
+}
+
+component Section inherits VerticalLayout {
+    in property <string> title;
+    in property <string> hint;
+    spacing: 6px;
+    padding-top: 14px;
+    Text {
+        text: root.title;
+        color: Theme.gold;
+        font-size: Theme.small;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+    if root.hint != "": Text {
+        text: root.hint;
+        color: Theme.dim;
+        font-size: Theme.small;
+        wrap: word-wrap;
+    }
+    @children
+}
+
+component Note inherits Text {
+    color: Theme.dim;
+    font-size: Theme.small;
+    wrap: word-wrap;
+}
+
+component RemovableRow inherits Rectangle {
+    in property <string> label;
+    in property <string> detail;
+    callback remove();
+    height: 30px;
+    border-radius: 3px;
+    background: Theme.raised;
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 4px;
+        spacing: 6px;
+        VerticalLayout {
+            alignment: center;
+            Text {
+                text: root.label;
+                color: Theme.text;
+                font-size: Theme.body;
+                overflow: elide;
+            }
+            if root.detail != "": Text {
+                text: root.detail;
+                color: Theme.faint;
+                font-size: 10px;
+                overflow: elide;
+            }
+        }
+        Rectangle { }
+        remove-touch := TouchArea {
+            width: 24px;
+            clicked => { root.remove(); }
+            Text {
+                text: "×";
+                color: remove-touch.has-hover ? Theme.red : Theme.faint;
+                font-size: Theme.body;
+            }
+        }
+    }
+}
+
+export component SetupView inherits Rectangle {
+    in property <bool> first-run;
+    in property <[CharacterItem]> characters;
+    in property <string> character-status;
+    in property <bool> adding-character;
+    in property <bool> rift-available;
+    in property <string> rift-status;
+    in-out property <string> jabber-user;
+    in-out property <string> jabber-password;
+    in property <bool> jabber-password-saved;
+    in property <string> jabber-domain;
+    in property <[CharacterItem]> channels;
+    in-out property <string> new-channel;
+    in-out property <int> max-jumps: 2;
+    in-out property <bool> only-undocked: true;
+    in-out property <bool> notifications: true;
+    in-out property <int> privacy: 0;
+    in-out property <bool> start-with-windows;
+    in property <bool> can-start-with-windows;
+    in property <string> data-folder;
+
+    callback add-character();
+    callback remove-character(int);
+    callback import-rift();
+    callback add-channel(string);
+    callback remove-channel(int);
+    callback save();
+    callback cancel();
+
+    background: Theme.background;
+
+    VerticalLayout {
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                padding-bottom: 12px;
+                alignment: start;
+
+                if root.first-run: VerticalLayout {
+                    padding-top: 14px;
+                    spacing: 4px;
+                    Text {
+                        text: "Welcome to Waggle";
+                        color: Theme.text;
+                        font-size: 16px;
+                        font-weight: 700;
+                    }
+                    Note {
+                        text: "Intel near your pilots, Directorbot pings, PAP counts and a mining meter. Set it up once here; you can come back with the gear in the corner.";
+                    }
+                }
+
+                if root.rift-available: Section {
+                    title: "IMPORT FROM RIFT";
+                    hint: "Copies your Jabber login, intel channels and jump bridges from RIFT, once. RIFT itself is left alone.";
+                    HorizontalLayout {
+                        alignment: start;
+                        ActionButton {
+                            text: "Import from RIFT";
+                            clicked => { root.import-rift(); }
+                        }
+                    }
+                    if root.rift-status != "": Note { text: root.rift-status; }
+                }
+
+                Section {
+                    title: "CHARACTERS";
+                    hint: "Each character you add is where intel distance is measured from. EVE's login opens in your browser.";
+                    for character[index] in root.characters: RemovableRow {
+                        label: character.name;
+                        detail: character.detail;
+                        remove => { root.remove-character(index); }
+                    }
+                    HorizontalLayout {
+                        alignment: start;
+                        ActionButton {
+                            text: root.adding-character ? "Waiting for EVE login…" : "Add character";
+                            enabled: !root.adding-character;
+                            clicked => { root.add-character(); }
+                        }
+                    }
+                    if root.character-status != "": Note { text: root.character-status; }
+                }
+
+                Section {
+                    title: "JABBER";
+                    hint: "Your Goonswarm Jabber login, for Directorbot pings and PAP counts. The password is kept in Windows Credential Manager.";
+                    HorizontalLayout {
+                        spacing: 4px;
+                        LineEdit {
+                            placeholder-text: "username";
+                            text <=> root.jabber-user;
+                        }
+                        Text {
+                            text: "@" + root.jabber-domain;
+                            color: Theme.dim;
+                            vertical-alignment: center;
+                        }
+                    }
+                    LineEdit {
+                        input-type: password;
+                        placeholder-text: root.jabber-password-saved ? "password saved (type to replace)" : "password";
+                        text <=> root.jabber-password;
+                    }
+                }
+
+                Section {
+                    title: "INTEL CHANNELS";
+                    hint: "Type each channel's name exactly as EVE shows it.";
+                    for channel[index] in root.channels: RemovableRow {
+                        label: channel.name;
+                        detail: channel.detail;
+                        remove => { root.remove-channel(index); }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        LineEdit {
+                            placeholder-text: "channel name";
+                            text <=> root.new-channel;
+                            accepted => {
+                                root.add-channel(root.new-channel);
+                            }
+                        }
+                        ActionButton {
+                            text: "Add";
+                            enabled: root.new-channel != "";
+                            clicked => { root.add-channel(root.new-channel); }
+                        }
+                    }
+                }
+
+                Section {
+                    title: "ALERTS";
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text {
+                            text: "Alert within";
+                            color: Theme.text;
+                            vertical-alignment: center;
+                        }
+                        SpinBox {
+                            width: 90px;
+                            minimum: 0;
+                            maximum: 20;
+                            value <=> root.max-jumps;
+                        }
+                        Text {
+                            text: "jumps";
+                            color: Theme.text;
+                            vertical-alignment: center;
+                        }
+                        Rectangle { }
+                    }
+                    CheckBox {
+                        text: "Only while the pilot is undocked";
+                        checked <=> root.only-undocked;
+                    }
+                    CheckBox {
+                        text: "Show Windows notifications";
+                        checked <=> root.notifications;
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text {
+                            text: "Hide message text";
+                            color: Theme.text;
+                            vertical-alignment: center;
+                        }
+                        ComboBox {
+                            model: ["never", "while locked", "always"];
+                            current-index <=> root.privacy;
+                        }
+                    }
+                }
+
+                if root.can-start-with-windows: Section {
+                    title: "STARTUP";
+                    CheckBox {
+                        text: "Start Waggle when Windows starts";
+                        checked <=> root.start-with-windows;
+                    }
+                }
+
+                Note {
+                    text: "Settings and logs: " + root.data-folder;
+                }
+            }
+        }
+        Rectangle {
+            background: Theme.panel;
+            HorizontalLayout {
+                padding: 8px;
+                spacing: 8px;
+                alignment: end;
+                if !root.first-run: ActionButton {
+                    text: "Cancel";
+                    clicked => { root.cancel(); }
+                }
+                ActionButton {
+                    text: root.first-run ? "Start" : "Save";
+                    primary: true;
+                    clicked => { root.save(); }
+                }
+            }
+        }
+    }
+}

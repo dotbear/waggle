@@ -46,6 +46,9 @@ pub const APP: AppIdentity = AppIdentity {
 #[derive(Debug)]
 pub enum Command {
     RefreshPaps,
+    /// The linked characters changed; pick them up now rather than at the
+    /// next periodic check.
+    SyncCharacters,
 }
 
 /// The keyring this platform has.
@@ -389,6 +392,7 @@ async fn run(
                             warn!(%error, "Could not ask Directorbot for PAPs");
                         }
                     }
+                    Some(Command::SyncCharacters) => character_sync.reset_immediately(),
                     None => {
                         persist_log_checkpoints(&store, &log_monitor);
                         info!("Engine stopping");

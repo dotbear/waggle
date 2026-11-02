@@ -16,3 +16,9 @@ repository = "https://github.com/dotbear/waggle"
 # upstreamable at gitlab.com/xmpp-rs/xmpp-rs.
 [patch.crates-io]
 xmpp = { git = "https://github.com/dotbear/xmpp-rs", branch = "answer-software-version" }
+
+# A smaller, faster download for friends; release builds take longer.
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1

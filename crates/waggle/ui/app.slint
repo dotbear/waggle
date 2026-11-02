@@ -1,23 +1,11 @@
 // Waggle's window: dark and compact, to sit beside the EVE client.
 
-import { ScrollView } from "std-widgets.slint";
+import { Palette, ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { SetupView, CharacterItem } from "setup.slint";
 
-export global Theme {
-    out property <color> background: #0f1114;
-    out property <color> panel: #171a1f;
-    out property <color> raised: #1e2228;
-    out property <color> line: #262b33;
-    out property <color> text: #d7dbe0;
-    out property <color> dim: #8a929c;
-    out property <color> faint: #5c636d;
-    out property <color> gold: #e0a83a;
-    out property <color> red: #e5534b;
-    out property <color> green: #4caf7a;
-    out property <color> blue: #5aa0e6;
-    out property <length> small: 11px;
-    out property <length> body: 12px;
-    out property <length> heading: 13px;
-}
+export { CharacterItem }
+
 
 export struct IntelRow {
     system: string,
@@ -382,6 +370,34 @@ export component AppWindow inherits Window {
     in property <[PilotRow]> pilots;
     in property <MiningInfo> mining;
     in-out property <int> tab: 0;
+    in-out property <bool> setup-open;
+    in property <bool> first-run <=> setup.first-run;
+    in property <[CharacterItem]> setup-characters <=> setup.characters;
+    in property <string> character-status <=> setup.character-status;
+    in property <bool> adding-character <=> setup.adding-character;
+    in property <bool> rift-available <=> setup.rift-available;
+    in property <string> rift-status <=> setup.rift-status;
+    in-out property <string> jabber-user <=> setup.jabber-user;
+    in-out property <string> jabber-password <=> setup.jabber-password;
+    in property <bool> jabber-password-saved <=> setup.jabber-password-saved;
+    in property <string> jabber-domain <=> setup.jabber-domain;
+    in property <[CharacterItem]> setup-channels <=> setup.channels;
+    in-out property <string> new-channel <=> setup.new-channel;
+    in-out property <int> max-jumps <=> setup.max-jumps;
+    in-out property <bool> only-undocked <=> setup.only-undocked;
+    in-out property <bool> notifications <=> setup.notifications;
+    in-out property <int> privacy <=> setup.privacy;
+    in-out property <bool> start-with-windows <=> setup.start-with-windows;
+    in property <bool> can-start-with-windows <=> setup.can-start-with-windows;
+    in property <string> data-folder <=> setup.data-folder;
+    callback open-setup();
+    callback add-character <=> setup.add-character;
+    callback remove-character <=> setup.remove-character;
+    callback import-rift <=> setup.import-rift;
+    callback add-channel <=> setup.add-channel;
+    callback remove-channel <=> setup.remove-channel;
+    callback save-setup <=> setup.save;
+    callback cancel-setup <=> setup.cancel;
     /// Flipped every time the window is shown again, so the whole window is
     /// dirty and the software renderer repaints all of it.
     in property <bool> nudge;
@@ -390,6 +406,9 @@ export component AppWindow inherits Window {
 
     background: nudge ? Theme.background : Theme.background.darker(0.0001);
     default-font-size: Theme.body;
+    init => {
+        Palette.color-scheme = ColorScheme.dark;
+    }
 
     VerticalLayout {
         // Header: PAP counts and the Directorbot connection.
@@ -455,110 +474,128 @@ export component AppWindow inherits Window {
                         font-size: 14px;
                     }
                 }
-            }
-        }
-
-        if root.setup-hint != "": Rectangle {
-            background: Theme.gold.transparentize(85%);
-            HorizontalLayout {
-                padding: 8px;
-                Text {
-                    text: root.setup-hint;
-                    color: Theme.gold;
-                    font-size: Theme.body;
-                    wrap: word-wrap;
+                gear := TouchArea {
+                    width: 18px;
+                    clicked => { root.open-setup(); }
+                    Text {
+                        text: "⚙";
+                        color: root.setup-open || gear.has-hover ? Theme.gold : Theme.faint;
+                        font-size: 14px;
+                    }
                 }
             }
         }
 
-        // Tabs.
-        Rectangle {
-            background: Theme.panel;
-            HorizontalLayout {
-                Tab {
-                    label: "INTEL";
-                    active: root.tab == 0;
-                    clicked => { root.tab = 0; }
-                }
-                Tab {
-                    label: "PINGS";
-                    active: root.tab == 1;
-                    clicked => { root.tab = 1; }
-                }
-                Tab {
-                    label: "MINING";
-                    active: root.tab == 2;
-                    clicked => { root.tab = 2; }
-                }
-                Tab {
-                    label: "PILOTS";
-                    active: root.tab == 3;
-                    clicked => { root.tab = 3; }
-                }
-            }
-            Rectangle {
-                y: parent.height - 1px;
-                height: 1px;
-                background: Theme.line;
-            }
-        }
-
-        // Content.
         Rectangle {
             vertical-stretch: 1;
-            if root.tab == 0 && root.intel.length == 0: Empty {
-                title: "No hostiles near your pilots";
-                hint: "Reports from your intel channels show up here when they are within range of a linked pilot.";
-            }
-            if root.tab == 0 && root.intel.length > 0: ScrollView {
-                VerticalLayout {
-                    alignment: start;
-                    for row in root.intel: IntelItem { item: row; }
+            VerticalLayout {
+                visible: !root.setup-open;
+                if root.setup-hint != "": Rectangle {
+                    background: Theme.gold.transparentize(85%);
+                    HorizontalLayout {
+                        padding: 8px;
+                        Text {
+                            text: root.setup-hint;
+                            color: Theme.gold;
+                            font-size: Theme.body;
+                            wrap: word-wrap;
+                        }
+                    }
                 }
-            }
-            if root.tab == 1 && root.pings.length == 0: Empty {
-                title: "No fleet pings yet";
-                hint: "Directorbot broadcasts arrive here once Jabber is connected.";
-            }
-            if root.tab == 1 && root.pings.length > 0: ScrollView {
-                VerticalLayout {
-                    alignment: start;
-                    for row in root.pings: PingItem { item: row; }
-                }
-            }
-            if root.tab == 2 && !root.mining.active && root.mining.ores.length == 0: Empty {
-                title: "Not mining";
-                hint: "The meter starts by itself when your game log shows a mining laser cycling.";
-            }
-            if root.tab == 2 && (root.mining.active || root.mining.ores.length > 0): MiningPane {
-                info: root.mining;
-            }
-            if root.tab == 3 && root.pilots.length == 0: Empty {
-                title: "No pilots linked";
-                hint: "Add a character to see where it is and to measure intel distance from it.";
-            }
-            if root.tab == 3 && root.pilots.length > 0: ScrollView {
-                VerticalLayout {
-                    alignment: start;
-                    for row in root.pilots: PilotItem { item: row; }
-                }
-            }
-        }
 
-        // Status line.
-        Rectangle {
-            background: Theme.panel;
-            HorizontalLayout {
-                padding-left: 10px;
-                padding-right: 10px;
-                padding-top: 4px;
-                padding-bottom: 4px;
-                Text {
-                    text: root.status;
-                    color: Theme.faint;
-                    font-size: Theme.small;
-                    overflow: elide;
+                // Tabs.
+                Rectangle {
+                    background: Theme.panel;
+                    HorizontalLayout {
+                        Tab {
+                            label: "INTEL";
+                            active: root.tab == 0;
+                            clicked => { root.tab = 0; }
+                        }
+                        Tab {
+                            label: "PINGS";
+                            active: root.tab == 1;
+                            clicked => { root.tab = 1; }
+                        }
+                        Tab {
+                            label: "MINING";
+                            active: root.tab == 2;
+                            clicked => { root.tab = 2; }
+                        }
+                        Tab {
+                            label: "PILOTS";
+                            active: root.tab == 3;
+                            clicked => { root.tab = 3; }
+                        }
+                    }
+                    Rectangle {
+                        y: parent.height - 1px;
+                        height: 1px;
+                        background: Theme.line;
+                    }
                 }
+
+                // Content.
+                Rectangle {
+                    vertical-stretch: 1;
+                    if root.tab == 0 && root.intel.length == 0: Empty {
+                        title: "No hostiles near your pilots";
+                        hint: "Reports from your intel channels show up here when they are within range of a linked pilot.";
+                    }
+                    if root.tab == 0 && root.intel.length > 0: ScrollView {
+                        VerticalLayout {
+                            alignment: start;
+                            for row in root.intel: IntelItem { item: row; }
+                        }
+                    }
+                    if root.tab == 1 && root.pings.length == 0: Empty {
+                        title: "No fleet pings yet";
+                        hint: "Directorbot broadcasts arrive here once Jabber is connected.";
+                    }
+                    if root.tab == 1 && root.pings.length > 0: ScrollView {
+                        VerticalLayout {
+                            alignment: start;
+                            for row in root.pings: PingItem { item: row; }
+                        }
+                    }
+                    if root.tab == 2 && !root.mining.active && root.mining.ores.length == 0: Empty {
+                        title: "Not mining";
+                        hint: "The meter starts by itself when your game log shows a mining laser cycling.";
+                    }
+                    if root.tab == 2 && (root.mining.active || root.mining.ores.length > 0): MiningPane {
+                        info: root.mining;
+                    }
+                    if root.tab == 3 && root.pilots.length == 0: Empty {
+                        title: "No pilots linked";
+                        hint: "Add a character to see where it is and to measure intel distance from it.";
+                    }
+                    if root.tab == 3 && root.pilots.length > 0: ScrollView {
+                        VerticalLayout {
+                            alignment: start;
+                            for row in root.pilots: PilotItem { item: row; }
+                        }
+                    }
+                }
+
+                // Status line.
+                Rectangle {
+                    background: Theme.panel;
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 10px;
+                        padding-top: 4px;
+                        padding-bottom: 4px;
+                        Text {
+                            text: root.status;
+                            color: Theme.faint;
+                            font-size: Theme.small;
+                            overflow: elide;
+                        }
+                    }
+                }
+            }
+            setup := SetupView {
+                visible: root.setup-open;
             }
         }
     }

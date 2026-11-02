@@ -14,7 +14,7 @@ use slint::{
         software_renderer::{MinimalSoftwareWindow, RepaintBufferType},
     },
 };
-use waggle::{AppWindow, MiningInfo, OreRow, view};
+use waggle::{AppWindow, CharacterItem, MiningInfo, OreRow, view};
 use waggle_core::{
     directorbot::{PapSnapshot, PapStats},
     esi::{CharacterPresence, ShipPresence},
@@ -46,8 +46,12 @@ fn main() {
     window.set_size(PhysicalSize::new(WIDTH, HEIGHT));
 
     let mut frames = Vec::new();
-    for tab in 0..4 {
-        ui.set_tab(tab);
+    for tab in 0..5 {
+        if tab == 4 {
+            show_setup(&ui);
+        } else {
+            ui.set_tab(tab);
+        }
         std::thread::sleep(Duration::from_millis(10));
         slint::platform::update_timers_and_animations();
         let mut buffer = vec![Rgb8Pixel::default(); (WIDTH * HEIGHT) as usize];
@@ -59,7 +63,7 @@ fn main() {
     }
 
     let gap = 12;
-    let total_width = WIDTH * 4 + gap * 3;
+    let total_width = WIDTH * 5 + gap * 4;
     let mut image = vec![40u8; (total_width * HEIGHT * 3) as usize];
     for (index, frame) in frames.iter().enumerate() {
         let x0 = index as u32 * (WIDTH + gap);
@@ -80,6 +84,37 @@ fn main() {
         .write_image_data(&image)
         .unwrap();
     println!("{out}");
+}
+
+/// The setup view as a first-time user sees it after importing from RIFT.
+fn show_setup(ui: &AppWindow) {
+    let items = |rows: &[(&str, &str)]| {
+        ModelRc::from(Rc::new(VecModel::from(
+            rows.iter()
+                .map(|(name, detail)| CharacterItem {
+                    name: (*name).into(),
+                    detail: (*detail).into(),
+                })
+                .collect::<Vec<_>>(),
+        )))
+    };
+    ui.set_first_run(true);
+    ui.set_rift_available(true);
+    ui.set_rift_status(
+        "Imported 3 intel channels, 42 jump bridges and your Jabber login. Press Save to use it."
+            .into(),
+    );
+    ui.set_setup_characters(items(&[("Example Pilot", "added 2026-11-02")]));
+    ui.set_setup_channels(items(&[
+        ("intel.example", "Example Region"),
+        ("other.intel", ""),
+    ]));
+    ui.set_jabber_domain("goonfleet.com".into());
+    ui.set_jabber_user("example_pilot".into());
+    ui.set_jabber_password_saved(true);
+    ui.set_can_start_with_windows(true);
+    ui.set_data_folder(r"C:\Users\pilot\AppData\Local\Waggle\data".into());
+    ui.set_setup_open(true);
 }
 
 fn sample() -> view::ViewModel {

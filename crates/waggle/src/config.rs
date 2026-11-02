@@ -16,6 +16,12 @@ pub const EVE_CLIENT_ID: &str = "53f06eddd7454cd4bdd7e8651499199d";
 /// side by side.
 pub const EVE_CALLBACK: &str = "http://127.0.0.1:17633/callback";
 
+/// Goonswarm's Jabber server, which RIFT also assumes.
+pub const JABBER_DOMAIN: &str = "goonfleet.com";
+
+/// The bot that broadcasts fleet pings and answers PAP requests.
+pub const DIRECTORBOT: &str = "directorbot@goonfleet.com";
+
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
