@@ -111,6 +111,14 @@ fn ping_row(ping: &JabberPing, now: DateTime<Utc>) -> PingRow {
         strategic: pap_type.to_ascii_lowercase().contains("strat"),
         pap_type: pap_type.into(),
         comms: ping.comms.clone().unwrap_or_default().into(),
+        // Only web links: Directorbot's comms link is an https page that
+        // redirects to Mumble, and nothing else from a broadcast is opened.
+        link: ping
+            .comms_link
+            .clone()
+            .filter(|link| link.starts_with("https://"))
+            .unwrap_or_default()
+            .into(),
         age: age(ping.occurred_at, now).into(),
         muted: ping.muted,
     }

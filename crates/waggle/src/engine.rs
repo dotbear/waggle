@@ -96,8 +96,18 @@ pub fn spawn(
                     return;
                 }
             };
-            if let Err(error) = runtime.block_on(run(paths, config, receiver, publish)) {
-                tracing::error!(error = %format!("{error:#}"), "The engine stopped");
+            if let Err(error) = runtime.block_on(run(paths, config, receiver, &publish)) {
+                let message = format!("{error:#}");
+                tracing::error!(error = message, "The engine stopped");
+                // Say so in the window rather than leaving it quietly stale.
+                publish(ViewModel {
+                    now: Utc::now(),
+                    setup_hint: format!(
+                        "Waggle stopped working: {message}. Restart it from the tray; the log folder is listed in setup."
+                    ),
+                    jabber_text: "Stopped".to_owned(),
+                    ..ViewModel::default()
+                });
             }
         })
         .expect("the engine thread should start");
@@ -108,7 +118,7 @@ async fn run(
     paths: AppPaths,
     config: Config,
     mut commands: mpsc::UnboundedReceiver<Command>,
-    publish: impl Fn(ViewModel),
+    publish: &impl Fn(ViewModel),
 ) -> Result<()> {
     let store = Store::open(&paths.database_file)?;
     let roots = logs::discover_roots(&config.logs, &paths.home_dir);

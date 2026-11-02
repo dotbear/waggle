@@ -20,6 +20,7 @@ export struct IntelRow {
 
 export struct PingRow {
     title: string,
+    link: string,
     fc: string,
     formup: string,
     pap-type: string,
@@ -174,7 +175,14 @@ component IntelItem inherits Rectangle {
 
 component PingItem inherits Rectangle {
     in property <PingRow> item;
+    callback open-link(string);
     opacity: item.muted ? 0.55 : 1.0;
+    background: item.link != "" && ping-touch.has-hover ? Theme.raised : transparent;
+    ping-touch := TouchArea {
+        enabled: item.link != "";
+        mouse-cursor: item.link != "" ? pointer : default;
+        clicked => { root.open-link(item.link); }
+    }
     VerticalLayout {
         padding-left: 10px;
         padding-right: 10px;
@@ -210,8 +218,8 @@ component PingItem inherits Rectangle {
             overflow: elide;
         }
         if item.comms != "": Text {
-            text: item.comms;
-            color: Theme.faint;
+            text: item.link != "" ? item.comms + "  ·  click to join" : item.comms;
+            color: item.link != "" ? Theme.blue : Theme.faint;
             font-size: Theme.small;
             overflow: elide;
         }
@@ -398,11 +406,13 @@ export component AppWindow inherits Window {
     callback remove-channel <=> setup.remove-channel;
     callback save-setup <=> setup.save;
     callback cancel-setup <=> setup.cancel;
+    callback test-alert <=> setup.test-alert;
     /// Flipped every time the window is shown again, so the whole window is
     /// dirty and the software renderer repaints all of it.
     in property <bool> nudge;
 
     callback refresh-paps();
+    callback open-link(string);
 
     background: nudge ? Theme.background : Theme.background.darker(0.0001);
     default-font-size: Theme.body;
@@ -555,7 +565,10 @@ export component AppWindow inherits Window {
                     if root.tab == 1 && root.pings.length > 0: ScrollView {
                         VerticalLayout {
                             alignment: start;
-                            for row in root.pings: PingItem { item: row; }
+                            for row in root.pings: PingItem {
+                        item: row;
+                        open-link(url) => { root.open-link(url); }
+                    }
                         }
                     }
                     if root.tab == 2 && !root.mining.active && root.mining.ores.length == 0: Empty {

@@ -22,3 +22,5 @@ xmpp = { git = "https://github.com/dotbear/xmpp-rs", branch = "answer-software-v
 strip = true
 lto = true
 codegen-units = 1
+# Nothing in Waggle is CPU-bound; a smaller download matters more.
+opt-level = "s"

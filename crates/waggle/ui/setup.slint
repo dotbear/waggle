@@ -101,6 +101,7 @@ export component SetupView inherits Rectangle {
     callback add-channel(string);
     callback remove-channel(int);
     callback save();
+    callback test-alert();
     callback cancel();
 
     background: Theme.background;
@@ -236,6 +237,13 @@ export component SetupView inherits Rectangle {
                     CheckBox {
                         text: "Show Windows notifications";
                         checked <=> root.notifications;
+                    }
+                    HorizontalLayout {
+                        alignment: start;
+                        ActionButton {
+                            text: "Send a test alert";
+                            clicked => { root.test-alert(); }
+                        }
                     }
                     HorizontalLayout {
                         spacing: 8px;

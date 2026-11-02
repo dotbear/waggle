@@ -37,6 +37,10 @@ fn run() -> Result<()> {
     paths.ensure()?;
     let _log_guard = init_logging(&paths);
     info!(version = env!("CARGO_PKG_VERSION"), "Waggle starting");
+    // Release builds have no console, so a panic would vanish without this.
+    std::panic::set_hook(Box::new(|panic| {
+        error!(%panic, "Waggle panicked");
+    }));
     toast::declare_app_id();
 
     // One Waggle per user: a second copy would log into Jabber again and
@@ -102,6 +106,13 @@ fn run() -> Result<()> {
         let send = send.clone();
         window.on_refresh_paps(move || send(Command::RefreshPaps));
     }
+    window.on_open_link(|url| {
+        if url.starts_with("https://")
+            && let Err(error) = open::that_detached(url.as_str())
+        {
+            warn!(%error, "Could not open a comms link");
+        }
+    });
     setup::install(
         &window,
         paths.clone(),

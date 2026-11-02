@@ -276,6 +276,19 @@ Each step is its own commit and leaves EVEmarchy green.
 
 ## 5. Phase 2: the Waggle app
 
+**Status 2026-11-03 (overnight): usable, not yet tried with a real account.**
+Built: the dark, compact window (Intel, Pings, Mining, Pilots), tray, toasts
+with a sound per kind, single instance, the engine (EVEmarchy's daemon cycle
+on its own thread), the setup view (RIFT import, adding characters through
+EVE's login, the Jabber login into Credential Manager, intel channels, alert
+range, notifications and privacy, start with Windows), engine restart on
+save, panic and engine-failure reporting, and a CI-built per-user NSIS
+installer whose shortcut carries the AppUserModelID. Checked by driving the
+Windows 11 VM: first run, setup, saving, and the hand-off to EVE's login
+page. Not yet done: a real login end to end, toast sound on real hardware,
+remembering window size, clicking a ping to join comms, an icon better than
+the placeholder.
+
 ### Runtime
 
 - One process. A Tokio multi-thread runtime runs the core services (log

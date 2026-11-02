@@ -274,7 +274,7 @@ fn ping(
         formup: some(formup),
         pap_type: some(pap),
         comms: some(comms),
-        comms_link: None,
+        comms_link: some(comms).map(|_| "https://example.invalid/c/op1.html".to_owned()),
         comms_target: None,
         doctrine: None,
         body: String::new(),

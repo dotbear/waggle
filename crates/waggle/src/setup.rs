@@ -133,6 +133,27 @@ pub fn install(
         }
     });
 
+    window.on_test_alert(|| {
+        use waggle_core::notify::{Notification, NotificationSink, Urgency};
+        // The real intel shape and sound, so this is what a hostile sounds like.
+        let sample = Notification {
+            title: "Test: hostile 1 jump from your pilot".to_owned(),
+            body: "This is what an intel alert looks and sounds like.".to_owned(),
+            category: "intel",
+            urgency: Urgency::High,
+            glyph: "",
+            icon: "",
+            image: None,
+            replace_tag: None,
+            click: None,
+            actions: Vec::new(),
+            redacted: false,
+        };
+        if let Err(error) = crate::toast::Desktop::detect().deliver(&sample) {
+            warn!(error = %format!("{error:#}"), "Could not show the test alert");
+        }
+    });
+
     let s = Rc::clone(&setup);
     window.on_save_setup(move || {
         let Some(window) = s.window.upgrade() else {
@@ -238,7 +259,7 @@ impl Setup {
                 }
                 Err(error) => {
                     warn!(error = %format!("{error:#}"), "Could not link a character");
-                    format!("Not added: {error:#}")
+                    format!("Not added: {}", explain_login_failure(error))
                 }
             };
             let _ = slint::invoke_from_event_loop(move || {
@@ -372,6 +393,23 @@ impl Setup {
         }
         info!("Saved settings");
         Ok(draft.clone())
+    }
+}
+
+/// A login failure in words a pilot can act on, or the error itself when it
+/// is not one of the expected ones.
+fn explain_login_failure(error: &anyhow::Error) -> String {
+    let detail = format!("{error:#}");
+    if detail.contains("timed out waiting for EVE SSO") {
+        "the EVE login wasn't finished within 5 minutes. Press Add character to try again."
+            .to_owned()
+    } else if detail.contains("could not listen for EVE SSO") {
+        "another program is using port 17633, which EVE's login returns to. Close it and try again."
+            .to_owned()
+    } else if detail.contains("declined") {
+        "the login was cancelled in the browser.".to_owned()
+    } else {
+        detail
     }
 }
 
