@@ -88,8 +88,9 @@ waggle/
   manifest.json         # Omarchy plugin manifest (waggle-omarchy)
   omarchy/              # the plugin's QML (if entryPoints accept a subdirectory; otherwise at the root)
   crates/waggle-core/   # portable logic, no UI, no platform shell-outs
+    assets/             # universe, ore volumes and mining holds (generated from CCP's SDE)
   crates/waggle/        # the binary: tray app and `waggle daemon`
-  assets/               # universe, mining volumes and holds TSVs (move from evemarchy)
+  crates/waggle-data/   # regenerates the assets (scripts/update-universe-data drives it)
 ```
 
 The plugin and the binary share one version number, and they're released

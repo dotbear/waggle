@@ -1,0 +1,18 @@
+[workspace]
+resolver = "3"
+members = ["crates/waggle-core", "crates/waggle", "crates/waggle-data"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.91"
+license = "GPL-3.0-only"
+repository = "https://github.com/dotbear/waggle"
+
+# Answering `jabber:iq:version` needs a handler the published crate does not
+# have: it replies service-unavailable to every IQ it does not implement, so
+# the client cannot say what it is. The branch adds
+# `ClientBuilder::set_software_version` and changes nothing else; it is
+# upstreamable at gitlab.com/xmpp-rs/xmpp-rs.
+[patch.crates-io]
+xmpp = { git = "https://github.com/dotbear/xmpp-rs", branch = "answer-software-version" }

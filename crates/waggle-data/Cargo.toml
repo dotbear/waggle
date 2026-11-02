@@ -1,0 +1,17 @@
+[package]
+name = "waggle-data"
+description = "Regenerates Waggle's bundled EVE data from CCP's official static data export"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.6", features = ["derive"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+waggle-core = { path = "../waggle-core" }
+zip = { version = "8.2.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }

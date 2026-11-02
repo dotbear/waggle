@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+waggle_root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+waggle_latest_url=https://developers.eveonline.com/static-data/tranquility/latest.jsonl
+waggle_build=$(curl --fail --silent --show-error --location "$waggle_latest_url" |
+  sed -n 's/.*"buildNumber": \([0-9][0-9]*\).*/\1/p')
+
+if [[ -z "$waggle_build" ]]; then
+  echo "Could not determine the current EVE SDE build" >&2
+  exit 1
+fi
+
+waggle_archive=$(mktemp --tmpdir "waggle-sde-$waggle_build.XXXXXX.zip")
+trap 'rm -f -- "$waggle_archive"' EXIT
+
+curl --fail --show-error --location \
+  --output "$waggle_archive" \
+  "https://developers.eveonline.com/static-data/tranquility/eve-online-static-data-$waggle_build-jsonl.zip"
+
+cargo run \
+  --quiet \
+  --manifest-path "$waggle_root/Cargo.toml" \
+  --bin update-universe \
+  -- \
+  --archive "$waggle_archive" \
+  --build-number "$waggle_build" \
+  --output "$waggle_root/crates/waggle-core/assets/universe-v1.tsv"
+
+# Keep mining volumes and hold sizes on the same official SDE build.
+cargo run --quiet --manifest-path "${waggle_root}/Cargo.toml" \
+  --bin update-mining-data -- --archive "$waggle_archive" \
+  --build-number "$waggle_build" \
+  --output "$waggle_root/crates/waggle-core/assets/mining-volumes-v1.tsv" \
+  --holds-output "$waggle_root/crates/waggle-core/assets/mining-holds-v1.tsv"

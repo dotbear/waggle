@@ -1,0 +1,11 @@
+[package]
+name = "waggle"
+description = "Lightweight EVE Online intel, Directorbot pings, PAP count and mining meter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+waggle-core = { path = "../waggle-core" }

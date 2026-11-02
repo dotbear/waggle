@@ -1,0 +1,19 @@
+# CCP SDE build 3561556; base mining hold in millionths of m3; bonuses are skill:percent per level (skill 0 is a flat role bonus)
+656	42000000000	3340:10	Miasmos
+17476	9000000000	-	Covetor
+17478	27500000000	17940:5	Retriever
+17480	16000000000	-	Procurer
+22544	11500000000	-	Hulk
+22546	18500000000	-	Skiff
+22548	31500000000	17940:5;22551:2.5	Mackinaw
+28352	300000000000	-	Rorqual
+28606	150000000000	29637:5	Orca
+32880	5000000000	-	Venture
+33697	12500000000	-	Prospect
+37135	19000000000	-	Endurance
+42244	50000000000	29637:5	Porpoise
+89240	8000000000	-	Pioneer
+89647	10000000000	-	Pioneer Consortium Issue
+89648	6250000000	-	Venture Consortium Issue
+89649	20000000000	-	Outrider
+91174	21000000000	-	Perseverance

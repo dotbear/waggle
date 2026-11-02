@@ -1,0 +1,489 @@
+# CCP SDE build 3561556; volume in millionths of m3; exact English names
+18	350000	Plagioclase
+19	16000000	Spodumain
+20	1200000	Kernite
+21	3000000	Hedbergite
+22	16000000	Arkonor
+1223	16000000	Bistot
+1224	300000	Pyroxeres
+1225	16000000	Crokite
+1226	2000000	Jaspet
+1227	600000	Omber
+1228	150000	Scordite
+1229	5000000	Gneiss
+1230	100000	Veldspar
+1231	3000000	Hemorphite
+1232	8000000	Dark Ochre
+11396	40000000	Mercoxit
+16262	1000000000	Clear Icicle
+16263	1000000000	Glacial Mass
+16264	1000000000	Blue Ice
+16265	1000000000	White Glaze
+16266	1000000000	Glare Crust
+16267	1000000000	Dark Glitter
+16268	1000000000	Gelidus
+16269	1000000000	Krystallos
+17425	16000000	Arkonor II-Grade
+17426	16000000	Arkonor III-Grade
+17428	16000000	Bistot II-Grade
+17429	16000000	Bistot III-Grade
+17432	16000000	Crokite II-Grade
+17433	16000000	Crokite III-Grade
+17436	8000000	Dark Ochre II-Grade
+17437	8000000	Dark Ochre III-Grade
+17440	3000000	Hedbergite II-Grade
+17441	3000000	Hedbergite III-Grade
+17444	3000000	Hemorphite II-Grade
+17445	3000000	Hemorphite III-Grade
+17448	2000000	Jaspet II-Grade
+17449	2000000	Jaspet III-Grade
+17452	1200000	Kernite II-Grade
+17453	1200000	Kernite III-Grade
+17455	350000	Plagioclase II-Grade
+17456	350000	Plagioclase III-Grade
+17459	300000	Pyroxeres II-Grade
+17460	300000	Pyroxeres III-Grade
+17463	150000	Scordite II-Grade
+17464	150000	Scordite III-Grade
+17466	16000000	Spodumain II-Grade
+17467	16000000	Spodumain III-Grade
+17470	100000	Veldspar II-Grade
+17471	100000	Veldspar III-Grade
+17865	5000000	Gneiss II-Grade
+17866	5000000	Gneiss III-Grade
+17867	600000	Omber II-Grade
+17868	600000	Omber III-Grade
+17869	40000000	Mercoxit II-Grade
+17870	40000000	Mercoxit III-Grade
+17975	1000000000	Blue Ice IV-Grade
+17976	1000000000	White Glaze IV-Grade
+17977	1000000000	Glacial Mass IV-Grade
+17978	1000000000	Clear Icicle IV-Grade
+25268	10000000	Amber Cytoserocin
+25273	10000000	Golden Cytoserocin
+25274	10000000	Viridian Cytoserocin
+25275	10000000	Celadon Cytoserocin
+25276	10000000	Malachite Cytoserocin
+25277	10000000	Lime Cytoserocin
+25278	10000000	Vermillion Cytoserocin
+25279	10000000	Azure Cytoserocin
+28367	8800000	Batch Compressed Arkonor
+28385	8800000	Batch Compressed Arkonor II-Grade
+28387	8800000	Batch Compressed Arkonor III-Grade
+28388	4400000	Batch Compressed Bistot
+28389	4400000	Batch Compressed Bistot III-Grade
+28390	4400000	Batch Compressed Bistot II-Grade
+28391	7810000	Batch Compressed Crokite
+28392	7810000	Batch Compressed Crokite III-Grade
+28393	7810000	Batch Compressed Crokite II-Grade
+28394	4200000	Batch Compressed Dark Ochre
+28395	4200000	Batch Compressed Dark Ochre III-Grade
+28396	4200000	Batch Compressed Dark Ochre II-Grade
+28397	1800000	Batch Compressed Gneiss
+28398	1800000	Batch Compressed Gneiss II-Grade
+28399	1800000	Batch Compressed Gneiss III-Grade
+28400	470000	Batch Compressed Hedbergite III-Grade
+28401	470000	Batch Compressed Hedbergite
+28402	470000	Batch Compressed Hedbergite II-Grade
+28403	860000	Batch Compressed Hemorphite
+28404	860000	Batch Compressed Hemorphite III-Grade
+28405	860000	Batch Compressed Hemorphite II-Grade
+28406	150000	Batch Compressed Jaspet
+28407	150000	Batch Compressed Jaspet III-Grade
+28408	150000	Batch Compressed Jaspet II-Grade
+28409	190000	Batch Compressed Kernite III-Grade
+28410	190000	Batch Compressed Kernite
+28411	190000	Batch Compressed Kernite II-Grade
+28412	100000	Batch Compressed Mercoxit II-Grade
+28413	100000	Batch Compressed Mercoxit
+28414	100000	Batch Compressed Mercoxit III-Grade
+28415	300000	Batch Compressed Omber III-Grade
+28416	300000	Batch Compressed Omber
+28417	300000	Batch Compressed Omber II-Grade
+28418	28000000	Batch Compressed Spodumain II-Grade
+28419	28000000	Batch Compressed Spodumain III-Grade
+28420	28000000	Batch Compressed Spodumain
+28421	150000	Batch Compressed Plagioclase II-Grade
+28422	150000	Batch Compressed Plagioclase
+28423	150000	Batch Compressed Plagioclase III-Grade
+28424	160000	Batch Compressed Pyroxeres
+28425	160000	Batch Compressed Pyroxeres II-Grade
+28426	160000	Batch Compressed Pyroxeres III-Grade
+28427	190000	Batch Compressed Scordite II-Grade
+28428	190000	Batch Compressed Scordite III-Grade
+28429	190000	Batch Compressed Scordite
+28430	150000	Batch Compressed Veldspar II-Grade
+28431	150000	Batch Compressed Veldspar III-Grade
+28432	150000	Batch Compressed Veldspar
+28433	100000000	Compressed Blue Ice
+28434	100000000	Compressed Clear Icicle
+28435	100000000	Compressed Dark Glitter
+28436	100000000	Compressed Clear Icicle IV-Grade
+28437	100000000	Compressed Gelidus
+28438	100000000	Compressed Glacial Mass
+28439	100000000	Compressed Glare Crust
+28440	100000000	Compressed Krystallos
+28441	100000000	Compressed White Glaze IV-Grade
+28442	100000000	Compressed Glacial Mass IV-Grade
+28443	100000000	Compressed Blue Ice IV-Grade
+28444	100000000	Compressed White Glaze
+28617	100000	Banidine
+28618	300000	Augumene
+28619	600000	Mercium
+28620	1200000	Lyavite
+28621	2000000	Pithix
+28622	5000000	Green Arisite
+28623	8000000	Oeryl
+28624	16000000	Geodite
+28625	16000000	Polygypsum
+28626	40000000	Zuthrine
+28627	1000000000	Azure Ice
+28628	1000000000	Crystalline Icicle
+28629	10000000	Gamboge Cytoserocin
+28630	10000000	Chartreuse Cytoserocin
+28694	10000000	Amber Mykoserocin
+28695	10000000	Azure Mykoserocin
+28696	10000000	Celadon Mykoserocin
+28697	10000000	Golden Mykoserocin
+28698	10000000	Lime Mykoserocin
+28699	10000000	Malachite Mykoserocin
+28700	10000000	Vermillion Mykoserocin
+28701	10000000	Viridian Mykoserocin
+30370	1000000	Fullerite-C50
+30371	1000000	Fullerite-C60
+30372	1000000	Fullerite-C70
+30373	2000000	Fullerite-C72
+30374	2000000	Fullerite-C84
+30375	2000000	Fullerite-C28
+30376	5000000	Fullerite-C32
+30377	5000000	Fullerite-C320
+30378	10000000	Fullerite-C540
+45490	10000000	Zeolites
+45491	10000000	Sylvite
+45492	10000000	Bitumens
+45493	10000000	Coesite
+45494	10000000	Cobaltite
+45495	10000000	Euxenite
+45496	10000000	Titanite
+45497	10000000	Scheelite
+45498	10000000	Otavite
+45499	10000000	Sperrylite
+45500	10000000	Vanadinite
+45501	10000000	Chromite
+45502	10000000	Carnotite
+45503	10000000	Zircon
+45504	10000000	Pollucite
+45506	10000000	Cinnabar
+45510	10000000	Xenotime
+45511	10000000	Monazite
+45512	10000000	Loparite
+45513	10000000	Ytterbite
+46280	10000000	Brimful Zeolites
+46281	10000000	Glistening Zeolites
+46282	10000000	Brimful Sylvite
+46283	10000000	Glistening Sylvite
+46284	10000000	Brimful Bitumens
+46285	10000000	Glistening Bitumens
+46286	10000000	Brimful Coesite
+46287	10000000	Glistening Coesite
+46288	10000000	Copious Cobaltite
+46289	10000000	Twinkling Cobaltite
+46290	10000000	Copious Euxenite
+46291	10000000	Twinkling Euxenite
+46292	10000000	Copious Titanite
+46293	10000000	Twinkling Titanite
+46294	10000000	Copious Scheelite
+46295	10000000	Twinkling Scheelite
+46296	10000000	Lavish Otavite
+46297	10000000	Shimmering Otavite
+46298	10000000	Lavish Sperrylite
+46299	10000000	Shimmering Sperrylite
+46300	10000000	Lavish Vanadinite
+46301	10000000	Shimmering Vanadinite
+46302	10000000	Lavish Chromite
+46303	10000000	Shimmering Chromite
+46304	10000000	Replete Carnotite
+46305	10000000	Glowing Carnotite
+46306	10000000	Replete Zircon
+46307	10000000	Glowing Zircon
+46308	10000000	Replete Pollucite
+46309	10000000	Glowing Pollucite
+46310	10000000	Replete Cinnabar
+46311	10000000	Glowing Cinnabar
+46312	10000000	Bountiful Xenotime
+46313	10000000	Shining Xenotime
+46314	10000000	Bountiful Monazite
+46315	10000000	Shining Monazite
+46316	10000000	Bountiful Loparite
+46317	10000000	Shining Loparite
+46318	10000000	Bountiful Ytterbite
+46319	10000000	Shining Ytterbite
+46675	8000000	Dark Ochre IV-Grade
+46676	16000000	Bistot IV-Grade
+46677	16000000	Crokite IV-Grade
+46678	16000000	Arkonor IV-Grade
+46679	5000000	Gneiss IV-Grade
+46680	3000000	Hedbergite IV-Grade
+46681	3000000	Hemorphite IV-Grade
+46682	2000000	Jaspet IV-Grade
+46683	1200000	Kernite IV-Grade
+46684	600000	Omber IV-Grade
+46685	350000	Plagioclase IV-Grade
+46686	300000	Pyroxeres IV-Grade
+46687	150000	Scordite IV-Grade
+46688	16000000	Spodumain IV-Grade
+46689	100000	Veldspar IV-Grade
+46691	8800000	Batch Compressed Arkonor IV-Grade
+46692	4400000	Batch Compressed Bistot IV-Grade
+46693	7810000	Batch Compressed Crokite IV-Grade
+46694	4200000	Batch Compressed Dark Ochre IV-Grade
+46695	1800000	Batch Compressed Gneiss IV-Grade
+46696	470000	Batch Compressed Hedbergite IV-Grade
+46697	860000	Batch Compressed Hemorphite IV-Grade
+46698	150000	Batch Compressed Jaspet IV-Grade
+46699	190000	Batch Compressed Kernite IV-Grade
+46700	300000	Batch Compressed Omber IV-Grade
+46701	150000	Batch Compressed Plagioclase IV-Grade
+46702	160000	Batch Compressed Pyroxeres IV-Grade
+46703	190000	Batch Compressed Scordite IV-Grade
+46704	28000000	Batch Compressed Spodumain IV-Grade
+46705	150000	Batch Compressed Veldspar IV-Grade
+49787	10000000	Hiemal Tricarboxyl Vapor
+49789	6000000	Hiemal Tricarboxyl Condensate
+50015	3000000	Amethystic Crystallite
+52306	16000000	Talassonite
+52315	16000000	Rakovene
+52316	16000000	Bezdnacine
+56625	16000000	Talassonite II-Grade
+56626	16000000	Talassonite III-Grade
+56627	16000000	Bezdnacine II-Grade
+56628	16000000	Bezdnacine III-Grade
+56629	16000000	Rakovene II-Grade
+56630	16000000	Rakovene III-Grade
+60771	100000	Nephrite
+62454	100000	Compressed Bitumens
+62455	100000	Compressed Brimful Bitumens
+62456	100000	Compressed Glistening Bitumens
+62457	100000	Compressed Coesite
+62458	100000	Compressed Brimful Coesite
+62459	100000	Compressed Glistening Coesite
+62460	100000	Compressed Sylvite
+62461	100000	Compressed Brimful Sylvite
+62463	100000	Compressed Zeolites
+62464	100000	Compressed Brimful Zeolites
+62466	100000	Compressed Glistening Sylvite
+62467	100000	Compressed Glistening Zeolites
+62468	100000	Compressed Scheelite
+62469	100000	Compressed Copious Scheelite
+62470	100000	Compressed Twinkling Scheelite
+62471	100000	Compressed Euxenite
+62472	100000	Compressed Copious Euxenite
+62473	100000	Compressed Twinkling Euxenite
+62474	100000	Compressed Cobaltite
+62475	100000	Compressed Copious Cobaltite
+62476	100000	Compressed Twinkling Cobaltite
+62477	100000	Compressed Titanite
+62478	100000	Compressed Copious Titanite
+62479	100000	Compressed Twinkling Titanite
+62480	100000	Compressed Chromite
+62481	100000	Compressed Lavish Chromite
+62482	100000	Compressed Shimmering Chromite
+62483	100000	Compressed Otavite
+62484	100000	Compressed Lavish Otavite
+62485	100000	Compressed Shimmering Otavite
+62486	100000	Compressed Sperrylite
+62487	100000	Compressed Lavish Sperrylite
+62488	100000	Compressed Shimmering Sperrylite
+62489	100000	Compressed Vanadinite
+62490	100000	Compressed Lavish Vanadinite
+62491	100000	Compressed Shimmering Vanadinite
+62492	100000	Compressed Carnotite
+62493	100000	Compressed Replete Carnotite
+62494	100000	Compressed Glowing Carnotite
+62495	100000	Compressed Cinnabar
+62496	100000	Compressed Replete Cinnabar
+62497	100000	Compressed Glowing Cinnabar
+62498	100000	Compressed Pollucite
+62499	100000	Compressed Replete Pollucite
+62500	100000	Compressed Glowing Pollucite
+62501	100000	Compressed Zircon
+62502	100000	Compressed Replete Zircon
+62503	100000	Compressed Glowing Zircon
+62504	100000	Compressed Loparite
+62505	100000	Compressed Bountiful Loparite
+62506	100000	Compressed Shining Loparite
+62507	100000	Compressed Monazite
+62508	100000	Compressed Bountiful Monazite
+62509	100000	Compressed Shining Monazite
+62510	100000	Compressed Xenotime
+62511	100000	Compressed Bountiful Xenotime
+62512	100000	Compressed Shining Xenotime
+62513	100000	Compressed Ytterbite
+62514	100000	Compressed Bountiful Ytterbite
+62515	100000	Compressed Shining Ytterbite
+62516	1000	Compressed Veldspar
+62517	1000	Compressed Veldspar II-Grade
+62518	1000	Compressed Veldspar III-Grade
+62519	1000	Compressed Veldspar IV-Grade
+62520	1500	Compressed Scordite
+62521	1500	Compressed Scordite II-Grade
+62522	1500	Compressed Scordite III-Grade
+62523	1500	Compressed Scordite IV-Grade
+62524	3000	Compressed Pyroxeres
+62525	3000	Compressed Pyroxeres II-Grade
+62526	3000	Compressed Pyroxeres III-Grade
+62527	3000	Compressed Pyroxeres IV-Grade
+62528	3500	Compressed Plagioclase
+62529	3500	Compressed Plagioclase II-Grade
+62530	3500	Compressed Plagioclase III-Grade
+62531	3500	Compressed Plagioclase IV-Grade
+62532	6000	Compressed Omber
+62533	6000	Compressed Omber II-Grade
+62534	6000	Compressed Omber III-Grade
+62535	6000	Compressed Omber IV-Grade
+62536	12000	Compressed Kernite
+62537	12000	Compressed Kernite II-Grade
+62538	12000	Compressed Kernite III-Grade
+62539	12000	Compressed Kernite IV-Grade
+62540	20000	Compressed Jaspet
+62541	20000	Compressed Jaspet II-Grade
+62542	20000	Compressed Jaspet III-Grade
+62543	20000	Compressed Jaspet IV-Grade
+62544	30000	Compressed Hemorphite
+62545	30000	Compressed Hemorphite II-Grade
+62546	30000	Compressed Hemorphite III-Grade
+62547	30000	Compressed Hemorphite IV-Grade
+62548	30000	Compressed Hedbergite
+62549	30000	Compressed Hedbergite II-Grade
+62550	30000	Compressed Hedbergite III-Grade
+62551	30000	Compressed Hedbergite IV-Grade
+62552	50000	Compressed Gneiss
+62553	50000	Compressed Gneiss II-Grade
+62554	50000	Compressed Gneiss III-Grade
+62555	50000	Compressed Gneiss IV-Grade
+62556	80000	Compressed Dark Ochre
+62557	80000	Compressed Dark Ochre II-Grade
+62558	80000	Compressed Dark Ochre III-Grade
+62559	80000	Compressed Dark Ochre IV-Grade
+62560	160000	Compressed Crokite
+62561	160000	Compressed Crokite II-Grade
+62562	160000	Compressed Crokite III-Grade
+62563	160000	Compressed Crokite IV-Grade
+62564	160000	Compressed Bistot
+62565	160000	Compressed Bistot II-Grade
+62566	160000	Compressed Bistot III-Grade
+62567	160000	Compressed Bistot IV-Grade
+62568	160000	Compressed Arkonor
+62569	160000	Compressed Arkonor II-Grade
+62570	160000	Compressed Arkonor III-Grade
+62571	160000	Compressed Arkonor IV-Grade
+62572	160000	Compressed Spodumain
+62573	160000	Compressed Spodumain II-Grade
+62574	160000	Compressed Spodumain III-Grade
+62575	160000	Compressed Spodumain IV-Grade
+62576	160000	Compressed Bezdnacine
+62577	160000	Compressed Bezdnacine II-Grade
+62578	160000	Compressed Bezdnacine III-Grade
+62579	160000	Compressed Rakovene
+62580	160000	Compressed Rakovene II-Grade
+62581	160000	Compressed Rakovene III-Grade
+62582	160000	Compressed Talassonite
+62583	160000	Compressed Talassonite II-Grade
+62584	160000	Compressed Talassonite III-Grade
+62586	400000	Compressed Mercoxit
+62587	400000	Compressed Mercoxit II-Grade
+62588	400000	Compressed Mercoxit III-Grade
+72935	100000	Dense Moissanite
+74521	100000	Mordunium
+74522	100000	Mordunium II-Grade
+74523	100000	Mordunium III-Grade
+74524	100000	Mordunium IV-Grade
+74525	600000	Ytirium
+74526	600000	Ytirium II-Grade
+74527	600000	Ytirium III-Grade
+74528	600000	Ytirium IV-Grade
+74529	16000000	Eifyrium
+74530	16000000	Eifyrium II-Grade
+74531	16000000	Eifyrium III-Grade
+74532	16000000	Eifyrium IV-Grade
+74533	16000000	Ducinium
+74534	16000000	Ducinium II-Grade
+74535	16000000	Ducinium III-Grade
+74536	16000000	Ducinium IV-Grade
+75275	1000	Compressed Mordunium
+75276	1000	Compressed Mordunium II-Grade
+75277	1000	Compressed Mordunium III-Grade
+75278	1000	Compressed Mordunium IV-Grade
+75279	6000	Compressed Ytirium
+75280	6000	Compressed Ytirium II-Grade
+75281	6000	Compressed Ytirium III-Grade
+75282	6000	Compressed Ytirium IV-Grade
+75283	160000	Compressed Eifyrium
+75284	160000	Compressed Eifyrium II-Grade
+75285	160000	Compressed Eifyrium III-Grade
+75286	160000	Compressed Eifyrium IV-Grade
+75287	160000	Compressed Ducinium
+75288	160000	Compressed Ducinium II-Grade
+75289	160000	Compressed Ducinium III-Grade
+75290	160000	Compressed Ducinium IV-Grade
+76373	500000	Nesosilicate Rakovene
+77118	4000000	Amperum Mutanite
+77418	4000000	Peregrinus Mutanite
+77419	4000000	Conflagrati Mutanite
+77420	4000000	Solis Mutanite
+77421	4000000	Tenebraet Mutanite
+77524	4000000	Admixti Mutanite
+81900	1200000	Kylixium
+81901	1200000	Kylixium II-Grade
+81902	1200000	Kylixium III-Grade
+81903	1200000	Kylixium IV-Grade
+81975	800000	Griemeer
+81976	800000	Griemeer II-Grade
+81977	800000	Griemeer III-Grade
+81978	800000	Griemeer IV-Grade
+82016	4000000	Nocxite
+82017	4000000	Nocxite II-Grade
+82018	4000000	Nocxite III-Grade
+82019	4000000	Nocxite IV-Grade
+82163	5000000	Hezorime
+82164	5000000	Hezorime II-Grade
+82165	5000000	Hezorime III-Grade
+82166	5000000	Hezorime IV-Grade
+82205	5000000	Ueganite
+82206	5000000	Ueganite II-Grade
+82207	5000000	Ueganite III-Grade
+82208	5000000	Ueganite IV-Grade
+82300	12000	Compressed Kylixium
+82301	12000	Compressed Kylixium II-Grade
+82302	12000	Compressed Kylixium III-Grade
+82303	12000	Compressed Kylixium IV-Grade
+82304	40000	Compressed Nocxite
+82305	40000	Compressed Nocxite II-Grade
+82306	40000	Compressed Nocxite III-Grade
+82307	40000	Compressed Nocxite IV-Grade
+82308	50000	Compressed Ueganite
+82309	50000	Compressed Ueganite II-Grade
+82310	50000	Compressed Ueganite III-Grade
+82311	50000	Compressed Ueganite IV-Grade
+82312	50000	Compressed Hezorime
+82313	50000	Compressed Hezorime II-Grade
+82314	50000	Compressed Hezorime III-Grade
+82315	50000	Compressed Hezorime IV-Grade
+82316	8000	Compressed Griemeer
+82317	8000	Compressed Griemeer II-Grade
+82318	8000	Compressed Griemeer III-Grade
+82319	8000	Compressed Griemeer IV-Grade
+88105	600000	Tyranite
+92371	100000	Veldspar 0-Grade
+92372	1000	Compressed Veldspar 0-Grade
+92373	150000	Scordite 0-Grade
+92374	1500	Compressed Scordite 0-Grade
+92565	1000000	Raspite X-Grade
+92566	1000000	Polycrase X-Grade
+92567	1000000	Moissanite X-Grade
+92568	1000000	Kangite X-Grade
+92818	10000	Compressed Raspite X-Grade
+92819	10000	Compressed Polycrase X-Grade
+92820	10000	Compressed Moissanite X-Grade
+92821	10000	Compressed Kangite X-Grade
+95395	300000	Pyroxeres 0-Grade
