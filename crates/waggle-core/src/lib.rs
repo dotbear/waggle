@@ -4,6 +4,7 @@
 //! window or calls a platform tool directly: platform behaviour sits behind
 //! traits, and each front end supplies its own backend.
 
+pub mod alert;
 pub mod app;
 pub mod bridges;
 pub mod config;
