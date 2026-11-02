@@ -49,6 +49,23 @@ time, and each fix is cheap once known.
   carrying it, created by the installer. Toast sound is still unverified: the
   VM has no audio.
 
+## Installer
+
+- cargo-packager's NSIS installer (built on CI, `windows-latest`) installs
+  per user into `%LOCALAPPDATA%\Waggle` with no administrator rights, creates
+  `Start Menu\Programs\Waggle\Waggle.lnk` and a desktop shortcut, and stamps
+  the shortcut with the `identifier` as its AppUserModelID. With Waggle
+  declaring the same ID at startup, toasts are credited to "Waggle" with its
+  icon; a build run from a folder has no such shortcut, and its toasts show
+  as "Windows PowerShell". Verified in the VM on 2026-11-03.
+- The uninstaller deletes only the files it installed and removes the
+  install folder only when empty, so `%LOCALAPPDATA%\Waggle\data` survives
+  unless "delete app data" is ticked.
+- Config keys are camelCase (`installMode`, not `installerMode`); a wrong
+  key fails the packaging step, not the build.
+- The `.exe` icon is embedded by `winresource` in `build.rs`, which needs
+  Microsoft's resource compiler, so only Windows builds carry it.
+
 ## Testing in Omarchy's Windows VM
 
 - `omarchy-windows-vm install`, then open the screen at http://127.0.0.1:8006.
@@ -67,3 +84,8 @@ time, and each fix is cheap once known.
   (`/run/shm/monitor.sock` in the container): send
   `screendump /shared/x.png -f png`. Pair that with a build that logs to a
   file in the share, and a run can be checked without anyone describing it.
+- Drive the VM without touching the host: keys with the monitor's `sendkey`;
+  clicks and the wheel over QEMU's VNC server (port 5900 in the container)
+  with a minimal RFB client. Connect shared, and send `SetEncodings` before
+  any pointer event, or QEMU treats the client as relative and the cursor
+  drifts. `Win+R` then a `\\host.lan\Data\...\x.cmd` path launches a test.

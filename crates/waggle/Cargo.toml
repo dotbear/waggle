@@ -44,14 +44,20 @@ identifier = "io.github.dotbear.waggle"
 description = "Lightweight EVE Online intel, Directorbot pings, PAP count and mining meter"
 homepage = "https://github.com/dotbear/waggle"
 publisher = "dotbear"
-licenseFile = "../../LICENSE"
 icons = ["../../assets/waggle.ico"]
 formats = ["nsis"]
 outDir = "../../target/packager"
 beforePackagingCommand = "cargo build --release -p waggle"
 binaries = [{ path = "waggle", main = true }]
+# The GPL is shipped with the program rather than shown as a page to agree
+# to: it is not an end-user agreement, and nobody needs to accept it to use
+# the software.
+resources = [{ src = "../../LICENSE", target = "LICENSE.txt" }]
 
 [package.metadata.packager.nsis]
 installMode = "currentUser"
+installerIcon = "../../assets/waggle.ico"
+sidebarImage = "../../assets/installer-sidebar.bmp"
+headerImage = "../../assets/installer-header.bmp"
 # Offered as a checkbox when uninstalling, off by default.
 appdataPaths = ["$APPDATA/Waggle", "$LOCALAPPDATA/Waggle/data"]
