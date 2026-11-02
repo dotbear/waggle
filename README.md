@@ -26,7 +26,7 @@ something is.
 
 ## Install (Windows)
 
-Download `Waggle_<version>_x64-setup.exe` from the
+Download `waggle_<version>_x64-setup.exe` from the
 [releases](https://github.com/dotbear/waggle/releases) (or, until there is
 one, from the latest successful
 [Windows build](https://github.com/dotbear/waggle/actions/workflows/windows.yml)'s
