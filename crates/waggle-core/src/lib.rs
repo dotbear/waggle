@@ -11,6 +11,7 @@ pub mod config;
 pub mod directorbot;
 pub mod esi;
 pub mod files;
+pub mod import;
 pub mod industry;
 pub mod intel;
 pub mod jabber;
