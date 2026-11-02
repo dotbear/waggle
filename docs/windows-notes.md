@@ -40,6 +40,10 @@ time, and each fix is cheap once known.
   because the timer polling `MenuEvent::receiver()` was a local inside a
   single-shot callback. Keep long-lived timers in a struct the app owns, or
   in a `thread_local!`.
+- **Ask for the dark title bar when the window is created**, through
+  `BackendSelector::with_winit_window_attributes_hook` (`attributes.with_theme(Dark)`,
+  behind Slint's `unstable-winit-030` feature). Calling `set_theme` on the
+  winit window after showing it left the title bar white.
 - Create the tray icon on the main thread after Slint's event loop has
   started (in a `Timer::single_shot(0)`); winit's loop then pumps its
   messages. The tray's Open, Quit and right-click events all arrive.

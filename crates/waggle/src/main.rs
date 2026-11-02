@@ -65,6 +65,15 @@ fn run() -> Result<()> {
         }
     }
 
+    // A dark title bar, so Windows does not frame the dark window in white.
+    // Set when the window is created; changing it afterwards does not take.
+    slint::BackendSelector::new()
+        .backend_name("winit".into())
+        .with_winit_window_attributes_hook(|attributes| {
+            attributes.with_theme(Some(slint::winit_030::winit::window::Theme::Dark))
+        })
+        .select()
+        .context("could not start the window system")?;
     let window = AppWindow::new().context("could not create the window")?;
     if let Some(size) = window_size::load(&paths) {
         window.window().set_size(size);
