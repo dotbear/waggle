@@ -118,6 +118,12 @@ the logs itself and break the one-owner rule.
 
 ## 3. Phase 0: spikes and decisions (do these first, each is small)
 
+**Status 2026-11-02: done.** Everything builds for Windows. Slint, the tray
+icon and toasts work on Windows 11 using the **software renderer**; femtovg
+needs OpenGL and fails in VMs. The EVE application is registered and the
+licence is GPL-3.0. What each spike taught is in
+[docs/windows-notes.md](docs/windows-notes.md).
+
 1. **UI toolkit.** Recommendation: **Slint**. Its markup is close to QML,
    which we already know. It's retained-mode, so it idles at near-zero CPU, it
    has a small footprint, and its royalty-free licence covers desktop apps (it
