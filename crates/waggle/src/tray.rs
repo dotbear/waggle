@@ -9,6 +9,7 @@
 #[cfg_attr(not(windows), allow(dead_code))]
 pub enum TrayAction {
     Open,
+    Settings,
     RefreshPaps,
     Quit,
 }
@@ -29,6 +30,7 @@ mod windows {
     pub struct Tray {
         icon: TrayIcon,
         open: MenuId,
+        settings: MenuId,
         refresh: MenuId,
         quit: MenuId,
     }
@@ -37,10 +39,17 @@ mod windows {
         pub fn create() -> Result<Self> {
             let menu = Menu::new();
             let open = MenuItem::new("Open Waggle", true, None);
+            let settings = MenuItem::new("Settings…", true, None);
             let refresh = MenuItem::new("Refresh PAPs", true, None);
             let quit = MenuItem::new("Quit", true, None);
-            menu.append_items(&[&open, &refresh, &PredefinedMenuItem::separator(), &quit])
-                .context("could not build the tray menu")?;
+            menu.append_items(&[
+                &open,
+                &settings,
+                &refresh,
+                &PredefinedMenuItem::separator(),
+                &quit,
+            ])
+            .context("could not build the tray menu")?;
             let icon = TrayIconBuilder::new()
                 .with_menu(Box::new(menu))
                 .with_tooltip("Waggle")
@@ -50,6 +59,7 @@ mod windows {
             Ok(Self {
                 icon,
                 open: open.id().clone(),
+                settings: settings.id().clone(),
                 refresh: refresh.id().clone(),
                 quit: quit.id().clone(),
             })
@@ -61,6 +71,8 @@ mod windows {
             while let Ok(event) = MenuEvent::receiver().try_recv() {
                 if event.id == self.open {
                     actions.push(TrayAction::Open);
+                } else if event.id == self.settings {
+                    actions.push(TrayAction::Settings);
                 } else if event.id == self.refresh {
                     actions.push(TrayAction::RefreshPaps);
                 } else if event.id == self.quit {

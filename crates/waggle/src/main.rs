@@ -154,7 +154,12 @@ fn run() -> Result<()> {
         },
     );
 
-    window.show().context("could not show the window")?;
+    // Started at login (the Run key passes --background), Waggle waits in
+    // the tray; the first run always opens, since setup is the point of it.
+    let background = std::env::args().any(|arg| arg == "--background") && !first_run;
+    if !background {
+        window.show().context("could not show the window")?;
+    }
 
     // Clicking a toast brings the window up, from whatever thread Windows
     // reports the click on.
@@ -205,6 +210,14 @@ fn run() -> Result<()> {
                         TrayAction::Open => {
                             if let Some(window) = weak.upgrade() {
                                 show_again(&window);
+                            }
+                        }
+                        TrayAction::Settings => {
+                            if let Some(window) = weak.upgrade() {
+                                show_again(&window);
+                                if !window.get_setup_open() {
+                                    window.invoke_open_setup();
+                                }
                             }
                         }
                         TrayAction::RefreshPaps => send(Command::RefreshPaps),

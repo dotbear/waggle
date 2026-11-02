@@ -504,7 +504,8 @@ mod startup {
         }
         let status = if on {
             let exe = std::env::current_exe().context("could not find Waggle's own path")?;
-            let value = format!("\"{}\"", exe.display());
+            // Started at login, Waggle waits in the tray instead of opening.
+            let value = format!("\"{}\" --background", exe.display());
             reg(&[
                 "add", RUN_KEY, "/v", "Waggle", "/t", "REG_SZ", "/d", &value, "/f",
             ])?
