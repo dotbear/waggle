@@ -15,6 +15,7 @@ pub mod industry;
 pub mod intel;
 pub mod logs;
 pub mod mining;
+pub mod notify;
 pub mod secrets;
 pub mod skills;
 pub mod store;
