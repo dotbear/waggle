@@ -19,6 +19,16 @@ import your Jabber login, intel channels and jump bridges straight from RIFT.
 The name comes from the waggle dance: the way a scout bee tells the hive where
 something is.
 
+## Thanks to RIFT
+
+Waggle owes a great deal to [RIFT Intel Fusion Tool](https://riftforeve.online)
+by Nohus. RIFT showed what a desktop intel tool for EVE should do, and much of
+Waggle's feature set comes straight from using it every day: intel alerts by
+jump distance, Directorbot pings, PAP counts, jump bridges, and its ESI login.
+Waggle is a separate, much smaller program written from scratch. It doesn't
+copy RIFT's code, and it identifies itself as Waggle, never as RIFT. If you
+want maps, killmails, and everything else RIFT offers, use RIFT.
+
 ## Status
 
 **Not started.** Waggle is being split out of EVEmarchy, a private
