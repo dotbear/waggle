@@ -1,0 +1,9 @@
+Undock and bring tackle.
+FC Name: Synthetic Boss
+Fleet name: Synthetic Home Defence
+Formup Location: Synthetic Keepstar
+PAP Type: Strategic
+Comms: Synthetic 1
+Doctrine: Fast tackle
+Logistics welcome
+~~~ This was a coalition broadcast from Synthetic Broadcaster to pilots at 2026-09-03 12:34:56 ~~~

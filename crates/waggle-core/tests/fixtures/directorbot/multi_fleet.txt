@@ -1,0 +1,9 @@
+Two fleets forming.
+FC: First Synthetic Boss
+Fleet: First Synthetic Fleet
+Formup: Synthetic Keepstar
+PAP Type: Strategic
+FC: Second Synthetic Boss
+Fleet: Second Synthetic Fleet
+Formup: Other Synthetic Keepstar
+~~~ This was a coalition broadcast from Synthetic Broadcaster to pilots at 2026-09-03 12:34:56 ~~~
