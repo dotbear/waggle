@@ -5,6 +5,7 @@
 //! traits, and each front end supplies its own backend.
 
 pub mod bridges;
+pub mod config;
 pub mod intel;
 pub mod logs;
 pub mod mining;
