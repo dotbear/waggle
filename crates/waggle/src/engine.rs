@@ -153,11 +153,19 @@ async fn run(
     let jabber_credential = jabber_password.is_some();
     let mut jabber_connection: Option<ConnectionStatus> = None;
     let (mut jabber_events, jabber_handle) = match (jabber_configured, jabber_password) {
+        // A Jabber problem costs pings and PAPs, not intel and mining.
         (true, Some(password)) => {
-            let (events, handle) =
-                jabber::start(APP, &config.jabber, &config.paps, None, password)?;
-            jabber_connection = Some(ConnectionStatus::Connecting);
-            (Some(events), Some(handle))
+            match jabber::start(APP, &config.jabber, &config.paps, None, password) {
+                Ok((events, handle)) => {
+                    jabber_connection = Some(ConnectionStatus::Connecting);
+                    (Some(events), Some(handle))
+                }
+                Err(error) => {
+                    warn!(error = %format!("{error:#}"), "Could not start Jabber");
+                    jabber_connection = Some(ConnectionStatus::Disconnected(format!("{error:#}")));
+                    (None, None)
+                }
+            }
         }
         _ => (None, None),
     };
