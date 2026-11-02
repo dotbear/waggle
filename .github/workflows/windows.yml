@@ -23,8 +23,11 @@ jobs:
       - name: Test
         run: cargo test --workspace --locked
 
+      # A prebuilt binary when one is published; otherwise it compiles one.
       - name: Install cargo-packager
-        run: cargo install cargo-packager --version 0.11.8 --locked
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-packager@0.11.8
 
       - name: Build the installer
         run: cargo packager --release -p waggle
