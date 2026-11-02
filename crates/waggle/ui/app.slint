@@ -288,6 +288,7 @@ component PilotItem inherits Rectangle {
 
 component MiningPane inherits VerticalLayout {
     in property <MiningInfo> info;
+    alignment: start;
     padding: 12px;
     spacing: 10px;
     Text {
@@ -359,7 +360,6 @@ component MiningPane inherits VerticalLayout {
             font-size: Theme.body;
         }
     }
-    Rectangle { }
 }
 
 export component AppWindow inherits Window {

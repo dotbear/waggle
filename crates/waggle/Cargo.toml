@@ -27,5 +27,8 @@ waggle-core = { path = "../waggle-core" }
 tauri-winrt-notification = "=0.8.1"
 tray-icon = "=0.26.1"
 
+[dev-dependencies]
+png = "=0.18.1"
+
 [build-dependencies]
 slint-build = "=1.18.1"

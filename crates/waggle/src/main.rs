@@ -1,13 +1,6 @@
 // No console window behind the app in release builds; logs go to a file.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod config;
-mod engine;
-mod paths;
-mod toast;
-mod tray;
-mod view;
-
 use std::{
     cell::RefCell,
     fs::File,
@@ -20,14 +13,15 @@ use slint::{CloseRequestResponse, ComponentHandle, Timer, TimerMode};
 use tracing::{error, info, warn};
 use waggle_core::notify::{Notification, NotificationSink, Urgency};
 
-use crate::{
+use waggle::{
+    AppWindow,
     config::Config,
-    engine::Command,
+    engine::{self, Command},
     paths::AppPaths,
+    toast,
     tray::{Tray, TrayAction},
+    view,
 };
-
-slint::include_modules!();
 
 fn main() {
     if let Err(error) = run() {

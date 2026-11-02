@@ -6897,6 +6897,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "directories",
+ "png",
  "secrecy",
  "serde",
  "slint",
