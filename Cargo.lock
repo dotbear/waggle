@@ -6929,6 +6929,7 @@ dependencies = [
  "directories",
  "open",
  "png",
+ "reqwest",
  "secrecy",
  "serde",
  "slint",

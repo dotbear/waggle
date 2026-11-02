@@ -10,4 +10,5 @@ pub mod paths;
 pub mod setup;
 pub mod toast;
 pub mod tray;
+pub mod updates;
 pub mod view;

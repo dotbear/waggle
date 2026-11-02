@@ -389,6 +389,8 @@ export component AppWindow inherits Window {
     in property <string> jabber-text: "Jabber not set up";
     in property <bool> jabber-ok: false;
     in property <string> setup-hint;
+    in property <string> update-text;
+    in property <string> update-url;
     in property <string> status;
     in property <[IntelRow]> intel;
     in property <[PingRow]> pings;
@@ -519,6 +521,22 @@ export component AppWindow inherits Window {
             vertical-stretch: 1;
             VerticalLayout {
                 visible: !root.setup-open;
+                if root.update-text != "": Rectangle {
+                    background: update-touch.has-hover ? Theme.blue.transparentize(70%) : Theme.blue.transparentize(82%);
+                    HorizontalLayout {
+                        padding: 8px;
+                        Text {
+                            text: root.update-text;
+                            color: Theme.blue;
+                            font-size: Theme.body;
+                            wrap: word-wrap;
+                        }
+                    }
+                    update-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.open-link(root.update-url); }
+                    }
+                }
                 if root.setup-hint != "": Rectangle {
                     background: Theme.gold.transparentize(85%);
                     HorizontalLayout {

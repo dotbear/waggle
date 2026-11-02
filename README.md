@@ -55,6 +55,10 @@ setup.
 Settings live in `%APPDATA%\Waggle`, everything else (state, logs) in
 `%LOCALAPPDATA%\Waggle\data`.
 
+Once a day Waggle asks GitHub whether a newer release is out, and says so
+in a banner; nothing else is sent anywhere but EVE's servers and your
+Jabber server.
+
 ## Thanks to RIFT
 
 Waggle owes a great deal to [RIFT Intel Fusion Tool](https://riftforeve.online)

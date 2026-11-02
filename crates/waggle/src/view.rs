@@ -29,6 +29,7 @@ pub struct ViewModel {
     pub pings: Vec<JabberPing>,
     pub pilots: Vec<CharacterPresence>,
     pub mining: Option<mining::View>,
+    pub update: Option<crate::updates::Update>,
 }
 
 impl ViewModel {
@@ -60,6 +61,18 @@ pub fn apply(window: &AppWindow, view: &ViewModel) {
     window.set_jabber_ok(view.jabber_ok);
     window.set_setup_hint(view.setup_hint.clone().into());
     window.set_status(view.status.clone().into());
+    match &view.update {
+        Some(update) => {
+            window.set_update_text(
+                format!("Waggle {} is out. Click to download it.", update.version).into(),
+            );
+            window.set_update_url(update.url.clone().into());
+        }
+        None => {
+            window.set_update_text(SharedString::new());
+            window.set_update_url(SharedString::new());
+        }
+    }
     window.set_intel(model(
         view.intel.iter().map(|alert| intel_row(alert, view.now)),
     ));

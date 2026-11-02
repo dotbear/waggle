@@ -29,7 +29,7 @@ use waggle_core::{
     universe::Universe,
 };
 
-use crate::{config::Config, paths::AppPaths, toast::Desktop, view::ViewModel};
+use crate::{config::Config, paths::AppPaths, toast::Desktop, updates, view::ViewModel};
 
 /// How Waggle names itself to EVE's servers and to Jabber, and which scopes a
 /// character must grant. Ship, skills and the skill queue are asked for at
@@ -174,6 +174,22 @@ async fn run(
         .delivering(config.notifications.enabled);
     let mut alert_policy = AlertPolicy::new();
     let mut paused_until: Option<chrono::DateTime<Utc>> = None;
+    // Whether a newer Waggle is out: asked at start, then once a day.
+    let mut update: Option<updates::Update> = None;
+    let (update_sender, mut update_receiver) = mpsc::unbounded_channel();
+    tokio::spawn(async move {
+        loop {
+            match updates::check(&APP.user_agent(), APP.version).await {
+                Ok(found) => {
+                    if update_sender.send(found).is_err() {
+                        return;
+                    }
+                }
+                Err(error) => debug!(error = %format!("{error:#}"), "Update check failed"),
+            }
+            time::sleep(Duration::from_secs(24 * 60 * 60)).await;
+        }
+    });
     let mut mining = MiningService::restore(&store, roots.clone(), Utc::now().timestamp())?;
     // Waggle's meter starts by itself. Turned on once, the first time, so
     // someone who later switches it off stays switched off.
@@ -215,7 +231,8 @@ async fn run(
                 jabber_connection: &Option<ConnectionStatus>,
                 mining: &MiningService,
                 seen_channels: &BTreeSet<String>,
-                paused_until: Option<chrono::DateTime<Utc>>|
+                paused_until: Option<chrono::DateTime<Utc>>,
+                update: &Option<updates::Update>|
      -> Result<ViewModel> {
         let now = Utc::now();
         let mut pings = store.recent_jabber_pings(30)?;
@@ -263,6 +280,7 @@ async fn run(
             pings,
             pilots: presence_state.to_vec(),
             mining: mining.view(&store, now.timestamp()).ok(),
+            update: update.clone(),
         })
     };
     publish(view(
@@ -271,6 +289,7 @@ async fn run(
         &mining,
         &seen_channels,
         paused_until,
+        &update,
     )?);
 
     let mut log_poll = interval(Duration::from_millis(500));
@@ -408,6 +427,15 @@ async fn run(
                     changed = true;
                 }
             }
+            Some(found) = update_receiver.recv() => {
+                if found != update {
+                    if let Some(found) = &found {
+                        info!(version = found.version, "A newer Waggle is available");
+                    }
+                    update = found;
+                    changed = true;
+                }
+            }
             event = next_jabber_event(&mut jabber_events) => {
                 match event {
                     Some(jabber::Event::Connection(status)) => {
@@ -510,6 +538,7 @@ async fn run(
                 &mining,
                 &seen_channels,
                 paused_until,
+                &update,
             )?);
         }
     }

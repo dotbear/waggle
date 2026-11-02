@@ -217,6 +217,11 @@ fn sample() -> view::ViewModel {
             ),
         ],
         mining: None,
+        // WAGGLE_SAMPLE_UPDATE=1 shows the update banner too.
+        update: std::env::var_os("WAGGLE_SAMPLE_UPDATE").map(|_| waggle::updates::Update {
+            version: "0.2.0".to_owned(),
+            url: "https://github.com/dotbear/waggle/releases/tag/v0.2.0".to_owned(),
+        }),
     }
 }
 
