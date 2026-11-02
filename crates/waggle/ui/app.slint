@@ -1,0 +1,565 @@
+// Waggle's window: dark and compact, to sit beside the EVE client.
+
+import { ScrollView } from "std-widgets.slint";
+
+export global Theme {
+    out property <color> background: #0f1114;
+    out property <color> panel: #171a1f;
+    out property <color> raised: #1e2228;
+    out property <color> line: #262b33;
+    out property <color> text: #d7dbe0;
+    out property <color> dim: #8a929c;
+    out property <color> faint: #5c636d;
+    out property <color> gold: #e0a83a;
+    out property <color> red: #e5534b;
+    out property <color> green: #4caf7a;
+    out property <color> blue: #5aa0e6;
+    out property <length> small: 11px;
+    out property <length> body: 12px;
+    out property <length> heading: 13px;
+}
+
+export struct IntelRow {
+    system: string,
+    jumps: string,
+    age: string,
+    message: string,
+    reporter: string,
+    pilot: string,
+    critical: bool,
+    via-bridge: bool,
+}
+
+export struct PingRow {
+    title: string,
+    fc: string,
+    formup: string,
+    pap-type: string,
+    comms: string,
+    age: string,
+    strategic: bool,
+    muted: bool,
+}
+
+export struct PilotRow {
+    name: string,
+    online: bool,
+    known: bool,
+    location: string,
+    ship: string,
+    training: string,
+    problem: string,
+}
+
+export struct OreRow {
+    name: string,
+    amount: string,
+}
+
+export struct MiningInfo {
+    active: bool,
+    title: string,
+    total: string,
+    rate: string,
+    hold-percent: float,
+    hold-text: string,
+    ores: [OreRow],
+}
+
+component Badge inherits Rectangle {
+    in property <string> text;
+    in property <color> tint: Theme.dim;
+    height: 16px;
+    width: label.preferred-width + 10px;
+    border-radius: 3px;
+    background: tint.transparentize(80%);
+    label := Text {
+        text: root.text;
+        color: root.tint;
+        font-size: Theme.small;
+        font-weight: 600;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+}
+
+component Tab inherits Rectangle {
+    in property <string> label;
+    in property <bool> active;
+    callback clicked;
+    height: 28px;
+    background: touch.has-hover && !active ? Theme.raised : transparent;
+    Text {
+        text: root.label;
+        color: root.active ? Theme.gold : Theme.dim;
+        font-size: Theme.small;
+        font-weight: 700;
+        letter-spacing: 1px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    Rectangle {
+        y: parent.height - 2px;
+        height: 2px;
+        background: root.active ? Theme.gold : transparent;
+    }
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+component Empty inherits VerticalLayout {
+    in property <string> title;
+    in property <string> hint;
+    alignment: center;
+    padding: 24px;
+    spacing: 6px;
+    Text {
+        text: root.title;
+        color: Theme.text;
+        font-size: Theme.heading;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+    Text {
+        text: root.hint;
+        color: Theme.dim;
+        font-size: Theme.body;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+}
+
+component IntelItem inherits Rectangle {
+    in property <IntelRow> item;
+    background: item.critical ? Theme.red.transparentize(88%) : transparent;
+    VerticalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        spacing: 2px;
+        HorizontalLayout {
+            spacing: 6px;
+            Text {
+                text: item.system;
+                color: item.critical ? Theme.red : Theme.text;
+                font-size: Theme.heading;
+                font-weight: 700;
+                vertical-alignment: center;
+            }
+            Badge {
+                text: item.jumps;
+                tint: item.critical ? Theme.red : Theme.gold;
+            }
+            if item.via-bridge: Badge {
+                text: "via bridge";
+                tint: Theme.blue;
+            }
+            Rectangle { }
+            Text {
+                text: item.age;
+                color: Theme.faint;
+                font-size: Theme.small;
+                vertical-alignment: center;
+            }
+        }
+        Text {
+            text: item.message;
+            color: Theme.dim;
+            font-size: Theme.body;
+            overflow: elide;
+        }
+        Text {
+            text: item.reporter + "  ·  near " + item.pilot;
+            color: Theme.faint;
+            font-size: Theme.small;
+            overflow: elide;
+        }
+    }
+    Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Theme.line;
+    }
+}
+
+component PingItem inherits Rectangle {
+    in property <PingRow> item;
+    opacity: item.muted ? 0.55 : 1.0;
+    VerticalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        spacing: 2px;
+        HorizontalLayout {
+            spacing: 6px;
+            Text {
+                text: item.title;
+                color: Theme.text;
+                font-size: Theme.heading;
+                font-weight: 700;
+                overflow: elide;
+                vertical-alignment: center;
+            }
+            if item.pap-type != "": Badge {
+                text: item.pap-type;
+                tint: item.strategic ? Theme.gold : Theme.dim;
+            }
+            Rectangle { }
+            Text {
+                text: item.age;
+                color: Theme.faint;
+                font-size: Theme.small;
+                vertical-alignment: center;
+            }
+        }
+        if item.fc != "" || item.formup != "": Text {
+            text: (item.fc != "" ? "FC " + item.fc : "") + (item.fc != "" && item.formup != "" ? "  ·  " : "") + (item.formup != "" ? item.formup : "");
+            color: Theme.dim;
+            font-size: Theme.body;
+            overflow: elide;
+        }
+        if item.comms != "": Text {
+            text: item.comms;
+            color: Theme.faint;
+            font-size: Theme.small;
+            overflow: elide;
+        }
+    }
+    Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Theme.line;
+    }
+}
+
+component PilotItem inherits Rectangle {
+    in property <PilotRow> item;
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 7px;
+        padding-bottom: 7px;
+        spacing: 8px;
+        Rectangle {
+            width: 8px;
+            height: 8px;
+            y: 5px;
+            border-radius: 4px;
+            background: !item.known ? Theme.faint : item.online ? Theme.green : Theme.line;
+        }
+        VerticalLayout {
+            spacing: 2px;
+            Text {
+                text: item.name;
+                color: Theme.text;
+                font-size: Theme.heading;
+                font-weight: 600;
+                overflow: elide;
+            }
+            if item.location != "" || item.ship != "": Text {
+                text: item.location + (item.location != "" && item.ship != "" ? "  ·  " : "") + item.ship;
+                color: Theme.dim;
+                font-size: Theme.body;
+                overflow: elide;
+            }
+            if item.training != "": Text {
+                text: item.training;
+                color: Theme.faint;
+                font-size: Theme.small;
+                overflow: elide;
+            }
+            if item.problem != "": Text {
+                text: item.problem;
+                color: Theme.gold;
+                font-size: Theme.small;
+                wrap: word-wrap;
+            }
+        }
+    }
+    Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Theme.line;
+    }
+}
+
+component MiningPane inherits VerticalLayout {
+    in property <MiningInfo> info;
+    padding: 12px;
+    spacing: 10px;
+    Text {
+        text: info.title;
+        color: Theme.dim;
+        font-size: Theme.small;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    HorizontalLayout {
+        spacing: 16px;
+        VerticalLayout {
+            Text {
+                text: info.total;
+                color: Theme.text;
+                font-size: 22px;
+                font-weight: 700;
+            }
+            Text {
+                text: "mined";
+                color: Theme.faint;
+                font-size: Theme.small;
+            }
+        }
+        VerticalLayout {
+            Text {
+                text: info.rate;
+                color: Theme.gold;
+                font-size: 22px;
+                font-weight: 700;
+            }
+            Text {
+                text: "per hour";
+                color: Theme.faint;
+                font-size: Theme.small;
+            }
+        }
+    }
+    VerticalLayout {
+        spacing: 4px;
+        Rectangle {
+            height: 8px;
+            border-radius: 4px;
+            background: Theme.raised;
+            Rectangle {
+                x: 0;
+                width: parent.width * clamp(info.hold-percent, 0, 1);
+                border-radius: 4px;
+                background: info.hold-percent >= 0.95 ? Theme.red : Theme.gold;
+            }
+        }
+        Text {
+            text: info.hold-text;
+            color: Theme.dim;
+            font-size: Theme.small;
+        }
+    }
+    for ore in info.ores: HorizontalLayout {
+        Text {
+            text: ore.name;
+            color: Theme.dim;
+            font-size: Theme.body;
+            overflow: elide;
+        }
+        Rectangle { }
+        Text {
+            text: ore.amount;
+            color: Theme.text;
+            font-size: Theme.body;
+        }
+    }
+    Rectangle { }
+}
+
+export component AppWindow inherits Window {
+    title: "Waggle";
+    icon: @image-url("waggle.png");
+    preferred-width: 380px;
+    preferred-height: 600px;
+    min-width: 300px;
+    min-height: 360px;
+
+    in property <string> paps-month: "–";
+    in property <string> paps-30: "–";
+    in property <string> paps-90: "–";
+    in property <string> jabber-text: "Jabber not set up";
+    in property <bool> jabber-ok: false;
+    in property <string> setup-hint;
+    in property <string> status;
+    in property <[IntelRow]> intel;
+    in property <[PingRow]> pings;
+    in property <[PilotRow]> pilots;
+    in property <MiningInfo> mining;
+    in-out property <int> tab: 0;
+    /// Flipped every time the window is shown again, so the whole window is
+    /// dirty and the software renderer repaints all of it.
+    in property <bool> nudge;
+
+    callback refresh-paps();
+
+    background: nudge ? Theme.background : Theme.background.darker(0.0001);
+    default-font-size: Theme.body;
+
+    VerticalLayout {
+        // Header: PAP counts and the Directorbot connection.
+        Rectangle {
+            background: Theme.panel;
+            HorizontalLayout {
+                padding: 10px;
+                spacing: 12px;
+                VerticalLayout {
+                    alignment: center;
+                    Text {
+                        text: "WAGGLE";
+                        color: Theme.gold;
+                        font-size: Theme.small;
+                        font-weight: 800;
+                        letter-spacing: 2px;
+                    }
+                    HorizontalLayout {
+                        spacing: 4px;
+                        Rectangle {
+                            width: 6px;
+                            height: 6px;
+                            y: 4px;
+                            border-radius: 3px;
+                            background: root.jabber-ok ? Theme.green : Theme.faint;
+                        }
+                        Text {
+                            text: root.jabber-text;
+                            color: Theme.dim;
+                            font-size: Theme.small;
+                            overflow: elide;
+                        }
+                    }
+                }
+                Rectangle { }
+                for period[index] in [
+                    { label: "MONTH", value: root.paps-month },
+                    { label: "30 D", value: root.paps-30 },
+                    { label: "90 D", value: root.paps-90 },
+                ]: VerticalLayout {
+                    alignment: center;
+                    Text {
+                        text: period.value;
+                        color: index == 0 ? Theme.text : Theme.dim;
+                        font-size: index == 0 ? 15px : Theme.body;
+                        font-weight: 700;
+                        horizontal-alignment: right;
+                    }
+                    Text {
+                        text: period.label;
+                        color: Theme.faint;
+                        font-size: 9px;
+                        letter-spacing: 1px;
+                        horizontal-alignment: right;
+                    }
+                }
+                refresh := TouchArea {
+                    width: 18px;
+                    clicked => { root.refresh-paps(); }
+                    Text {
+                        text: "↻";
+                        color: refresh.has-hover ? Theme.gold : Theme.faint;
+                        font-size: 14px;
+                    }
+                }
+            }
+        }
+
+        if root.setup-hint != "": Rectangle {
+            background: Theme.gold.transparentize(85%);
+            HorizontalLayout {
+                padding: 8px;
+                Text {
+                    text: root.setup-hint;
+                    color: Theme.gold;
+                    font-size: Theme.body;
+                    wrap: word-wrap;
+                }
+            }
+        }
+
+        // Tabs.
+        Rectangle {
+            background: Theme.panel;
+            HorizontalLayout {
+                Tab {
+                    label: "INTEL";
+                    active: root.tab == 0;
+                    clicked => { root.tab = 0; }
+                }
+                Tab {
+                    label: "PINGS";
+                    active: root.tab == 1;
+                    clicked => { root.tab = 1; }
+                }
+                Tab {
+                    label: "MINING";
+                    active: root.tab == 2;
+                    clicked => { root.tab = 2; }
+                }
+                Tab {
+                    label: "PILOTS";
+                    active: root.tab == 3;
+                    clicked => { root.tab = 3; }
+                }
+            }
+            Rectangle {
+                y: parent.height - 1px;
+                height: 1px;
+                background: Theme.line;
+            }
+        }
+
+        // Content.
+        Rectangle {
+            vertical-stretch: 1;
+            if root.tab == 0 && root.intel.length == 0: Empty {
+                title: "No hostiles near your pilots";
+                hint: "Reports from your intel channels show up here when they are within range of a linked pilot.";
+            }
+            if root.tab == 0 && root.intel.length > 0: ScrollView {
+                VerticalLayout {
+                    alignment: start;
+                    for row in root.intel: IntelItem { item: row; }
+                }
+            }
+            if root.tab == 1 && root.pings.length == 0: Empty {
+                title: "No fleet pings yet";
+                hint: "Directorbot broadcasts arrive here once Jabber is connected.";
+            }
+            if root.tab == 1 && root.pings.length > 0: ScrollView {
+                VerticalLayout {
+                    alignment: start;
+                    for row in root.pings: PingItem { item: row; }
+                }
+            }
+            if root.tab == 2 && !root.mining.active && root.mining.ores.length == 0: Empty {
+                title: "Not mining";
+                hint: "The meter starts by itself when your game log shows a mining laser cycling.";
+            }
+            if root.tab == 2 && (root.mining.active || root.mining.ores.length > 0): MiningPane {
+                info: root.mining;
+            }
+            if root.tab == 3 && root.pilots.length == 0: Empty {
+                title: "No pilots linked";
+                hint: "Add a character to see where it is and to measure intel distance from it.";
+            }
+            if root.tab == 3 && root.pilots.length > 0: ScrollView {
+                VerticalLayout {
+                    alignment: start;
+                    for row in root.pilots: PilotItem { item: row; }
+                }
+            }
+        }
+
+        // Status line.
+        Rectangle {
+            background: Theme.panel;
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+                Text {
+                    text: root.status;
+                    color: Theme.faint;
+                    font-size: Theme.small;
+                    overflow: elide;
+                }
+            }
+        }
+    }
+}

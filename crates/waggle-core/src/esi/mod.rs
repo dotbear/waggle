@@ -8,7 +8,7 @@ mod sso;
 pub use callback::LoopbackCallback;
 pub use client::{
     CharacterPresence, EsiPoll, EsiService, IndustryPolling, ServerStatus, ShipPresence,
-    presence_unchanged,
+    TokenStore, presence_unchanged,
 };
 pub use sso::{
     AuthorizationRequest, CharacterIdentity, SsoClient, SsoMetadata, TokenBundle,

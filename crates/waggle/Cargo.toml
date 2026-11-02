@@ -8,4 +8,24 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+anyhow = "1.0.104"
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "serde"] }
+directories = "6.0.0"
+secrecy = "0.10.3"
+serde = { version = "1.0.229", features = ["derive"] }
+# The software renderer: femtovg needs OpenGL 3+, which VMs, remote sessions
+# and machines with poor drivers do not have (docs/windows-notes.md).
+slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-software"] }
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "sync", "time"] }
+toml = "1.1.5"
+tracing = "0.1.44"
+tracing-appender = "=0.2.5"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 waggle-core = { path = "../waggle-core" }
+
+[target.'cfg(windows)'.dependencies]
+tauri-winrt-notification = "=0.8.1"
+tray-icon = "=0.26.1"
+
+[build-dependencies]
+slint-build = "=1.18.1"
