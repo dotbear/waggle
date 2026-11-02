@@ -1,6 +1,7 @@
 # Waggle
 
-A lightweight EVE Online companion for Goonswarm pilots, for Windows and Linux.
+A lightweight EVE Online companion for Goonswarm pilots: a tray app on
+Windows, and a bar widget on [Omarchy](https://omarchy.org).
 
 Waggle does four things and nothing else:
 
@@ -13,8 +14,10 @@ Waggle does four things and nothing else:
 It also tells you when a skill finishes or a skill queue runs dry.
 
 It's meant to replace RIFT for people who only want these features, without
-the memory use and slowness. It sits in the system tray, and its first run can
-import your Jabber login, intel channels and jump bridges straight from RIFT.
+the memory use and slowness. On Windows it sits in the system tray. On Omarchy
+it runs as a background service with a bar widget. Either way, its first run
+can import your Jabber login, intel channels and jump bridges straight from
+RIFT.
 
 The name comes from the waggle dance: the way a scout bee tells the hive where
 something is.

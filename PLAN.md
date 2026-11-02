@@ -11,8 +11,11 @@ Directorbot pings and their PAP count**. They'd also like the **mining
 meter**. EVEmarchy already does all four well, but it only runs inside the
 Omarchy desktop on Linux.
 
-Waggle is those features, as a small native tray app that runs on Windows
-first and works on Linux too.
+Waggle is those features, delivered in two forms over one engine:
+
+- **Windows (and plain Linux):** a small native tray app.
+- **Omarchy:** a bar widget and panel, like EVEmarchy's today, driven by the
+  same engine running with no window.
 
 Waggle covers:
 
@@ -28,8 +31,8 @@ Waggle covers:
 Out of scope, and staying in EVEmarchy or moving to Nex Industries (NFA):
 
 - Industry jobs, industry defaults, industry picks, corporation jobs: moving to NFA (§10).
-- Client previews and live mining status on the previews: EVEmarchy only (they need Hyprland).
-- Beehive and comms: EVEmarchy only.
+- Client previews, Beehive and comms: these stay in EVEmarchy, which becomes
+  a private add-on that runs on top of Waggle (§2).
 - macOS: not a goal. Don't design it out, but don't test for it.
 
 **Targets:** idle memory under 50 MB RSS, idle CPU under 1%, one installer,
@@ -38,57 +41,79 @@ RIFT on the same machine and write down the numbers.
 
 ## 2. Architecture
 
-One shared core crate, with two front ends on top of it:
+One engine, one binary, several faces:
 
 ```text
-                 ┌──────────────────────────────┐
-                 │          waggle-core         │
-                 │  logs · intel · bridges ·    │
-                 │  universe · jabber · paps ·  │
-                 │  esi/sso · store · mining ·  │
-                 │  skills · import · config    │
-                 │  platform traits (secrets,   │
-                 │  notifications, file id,     │
-                 │  open url, paths)            │
-                 └──────────────┬───────────────┘
-              ┌─────────────────┴─────────────────┐
-   ┌──────────┴──────────┐             ┌──────────┴──────────┐
-   │       waggle        │             │      evemarchy      │
-   │ tray app, one       │             │ daemon + Omarchy    │
-   │ process, native UI, │             │ widget, previews,   │
-   │ Windows and Linux   │             │ beehive, comms      │
-   └─────────────────────┘             └─────────────────────┘
+ ┌──────────────────────────────────────────────────────────────┐
+ │ waggle-core (library)                                        │
+ │ logs · intel · bridges · universe · jabber · paps · esi/sso  │
+ │ store · mining · skills · import · config                    │
+ │ platform traits: secrets, notifications, file id, open url,  │
+ │ paths                                                        │
+ └───────────────────────────────┬──────────────────────────────┘
+ ┌───────────────────────────────┴──────────────────────────────┐
+ │ waggle (one binary)                                          │
+ │   waggle         tray app + native UI (Windows, plain Linux) │
+ │   waggle daemon  no window; serves the local API (Omarchy)   │
+ └───────────────────────────────┬──────────────────────────────┘
+                                 │ versioned local API
+                                 │ (Unix socket + state snapshot)
+          ┌──────────────────────┴───────────────────────┐
+ ┌────────┴──────────────────┐   ┌───────────────────────┴──────┐
+ │ waggle-omarchy            │   │ evemarchy (private add-on)   │
+ │ QML only: bar widget,     │   │ client previews, Beehive,    │
+ │ panel, toasts             │   │ comms: reads Waggle's state, │
+ │ (this repo's root)        │   │ owns no Jabber or log work   │
+ └───────────────────────────┘   └──────────────────────────────┘
 ```
 
-### Repository layout (recommended)
+### Each machine has exactly one owner
 
-This repo is a Cargo workspace:
+Exactly one Waggle process per machine owns the Jabber connection, log
+tailing, ESI tokens and notifications. Everything else is a client of it.
+Two owners would mean two Jabber logins on one account, double `!me` requests
+to Directorbot, and every alert notified twice. The single-instance lock
+(§5) enforces this, and neither EVEmarchy nor `waggle-omarchy` ever starts a
+service of its own.
+
+### Repository layout
+
+This repo is both a Cargo workspace and an Omarchy plugin.
+`omarchy plugin add <git-url>` clones the repo and expects `manifest.json`
+at the root, so the plugin lives at the root and the Rust lives under
+`crates/`. EVEmarchy is laid out the same way today.
 
 ```text
 waggle/
+  manifest.json         # Omarchy plugin manifest (waggle-omarchy)
+  omarchy/              # the plugin's QML (if entryPoints accept a subdirectory; otherwise at the root)
   crates/waggle-core/   # portable logic, no UI, no platform shell-outs
-  crates/waggle/        # the tray app
+  crates/waggle/        # the binary: tray app and `waggle daemon`
   assets/               # universe, mining volumes and holds TSVs (move from evemarchy)
 ```
 
-EVEmarchy depends on `waggle-core` with a path dependency while both live
-side by side in `~/projects`, and a git dependency once Waggle is on GitHub.
-The core lives here rather than in EVEmarchy because this is the
-cross-platform project. EVEmarchy becomes "Waggle core plus the
-Omarchy-specific extras".
+The plugin and the binary share one version number, and they're released
+together.
 
-The alternative is a monorepo containing both apps. That's simpler to change
-in one commit but couples their releases. Revisit if keeping the two repos in
-step gets annoying.
+### Tray mode is one process; daemon mode adds the API
 
-### Waggle is one process
+In tray mode, the UI and the background work live in one process: a Tokio
+runtime does the work, and the UI thread reads from channels. There's no IPC
+and no "daemon not running" state.
 
-EVEmarchy splits a daemon from the bar widget and connects them over a Unix
-socket (`src/ipc.rs`) and a JSON snapshot file (`src/snapshot.rs`). Waggle
-doesn't need that split: the UI and the background work live in one process.
-A Tokio runtime does the work, and the UI thread reads from channels or shared
-state. That removes IPC, snapshots and a whole class of "daemon not running"
-states. `ipc.rs` and `snapshot.rs` stay in EVEmarchy.
+`waggle daemon` runs the same services with no window. It publishes the
+EVEmarchy-style local API, the Unix socket (`src/ipc.rs`) and the atomic JSON
+snapshot (`src/snapshot.rs`), both of which move into `crates/waggle`. This
+API is a **public contract**: `waggle-omarchy` and the private EVEmarchy add-on
+both depend on it. So it carries a version number and a written schema
+(`docs/api.md`), and changes to it are additive. Keeping a narrow protocol
+stable is easier than keeping the whole `waggle-core` library API stable for
+an outside consumer.
+
+The snapshot carries more than the Waggle UI needs, including per-client live
+mining status (from `mining::live`) and character presence, because
+EVEmarchy's previews read them. Without that data, EVEmarchy would have to tail
+the logs itself and break the one-owner rule.
 
 ## 3. Phase 0: spikes and decisions (do these first, each is small)
 
@@ -145,9 +170,19 @@ From `evemarchy/src`:
 | `config.rs`, `settings.rs`, `paths.rs` | 3.2k | Split (below). |
 | `notify.rs`, `secrets.rs` | 1.2k | Become traits plus per-platform backends. |
 
-What stays in EVEmarchy: `main.rs` (CLI and daemon), `ipc.rs`, `snapshot.rs`,
-`images.rs`, `beehive.rs`, `comms.rs`, `demo.rs`, `doctor.rs`, `industry*.rs`
-and all the QML.
+What goes to `crates/waggle` (not the core) in Phase 2: `ipc.rs` and
+`snapshot.rs`, minus their industry, Beehive and preview parts. The QML for the
+in-scope features (the bar widget, the panel body, the mining panel and graph,
+toasts, glyphs, the theme) goes to the plugin in Phase 2b.
+
+What stays in EVEmarchy: `main.rs` (until Phase 4), `images.rs`,
+`beehive.rs`, `comms.rs`, `demo.rs`, `doctor.rs`, `industry*.rs` (until NFA
+takes them), and the preview QML.
+
+During Phase 1 only, EVEmarchy links `waggle-core` as a library, so the
+extraction can be checked against EVEmarchy's existing tests with no change
+in behaviour. That link is temporary scaffolding: in Phase 4 EVEmarchy becomes
+an API client instead.
 
 ### Dependency knots to untangle
 
@@ -275,6 +310,64 @@ Small, can be pinned, dark by default:
   AppUserModelID registered through a Start Menu shortcut. The installer has
   to create that shortcut, or toasts silently do nothing.
 
+### `waggle daemon`
+
+- The same services as tray mode, with no UI, plus the local API (§2). On
+  Linux it runs as a systemd user service started with the graphical session,
+  like `packaging/systemd/evemarchy.service`.
+- It sends notifications through the core's `Notifier` (`notify-send` on
+  Omarchy), so they fire even when the bar is hidden.
+- Login, settings and the RIFT import use CLI subcommands (`waggle auth add`,
+  `waggle import rift`, `waggle config check`), as EVEmarchy does today. The
+  panel can launch them.
+
+## 5b. Phase 2b: the Omarchy plugin (`waggle-omarchy`)
+
+QML only, ported from EVEmarchy's widget, cut down to Waggle's features:
+
+- **Bar widget:** PAP count and an intel-nearby state.
+- **Panel:** intel feed, pings, mining (panel and graph), characters and
+  skill queue, plus buttons that send commands over the API (refresh PAPs,
+  rescan logs, mining session controls).
+- **Toast host** for in-shell alerts, styled by the Omarchy theme.
+- **"Waggle isn't running" state:** if the socket is missing, the widget says
+  so and shows the install command, instead of a blank widget.
+
+Omarchy facts learned building EVEmarchy, which apply here too:
+- Editing a bar widget's QML needs a full shell restart. The "plugin
+  reloaded" message doesn't mean the widget picked up the change.
+- The panel closes when it loses focus, so pin it before taking a screenshot.
+- `qmllint` prints nothing and exits 255, so check QML errors in the journal
+  instead.
+
+Installation on Omarchy has two parts, and the README must say both:
+1. The binary: an AUR package (`waggle-bin`) or a release download, plus the
+   systemd user unit.
+2. The plugin: `omarchy plugin add https://github.com/dotbear/waggle --enable`.
+
+## 5c. Phase 4: EVEmarchy becomes an add-on
+
+Do this after Waggle's Omarchy plugin works on your own machine:
+
+1. Point EVEmarchy's previews, Beehive and comms at Waggle's API, so they read
+   presence and live mining status from the snapshot.
+2. Delete EVEmarchy's own services (logs, intel, Jabber, ESI, PAP, mining,
+   skills) and its link to `waggle-core`. Industry should have gone to NFA by
+   now (§10).
+3. Migrate your existing data once: a `waggle import evemarchy` command that
+   copies `~/.config/evemarchy/config.toml` (the sections Waggle covers), the
+   keyring entries and the relevant `state.db` tables into Waggle's paths.
+4. Strip EVEmarchy's bar widget down to what the add-on shows, or drop it if
+   the previews need no widget.
+5. **Open question:** Beehive uses ESI. If it needs scopes outside Waggle's
+   minimal set, either Waggle requests them when the add-on is installed, or
+   the add-on runs its own SSO for those scopes only. Don't add scopes to every
+   Waggle user's consent page for one private add-on.
+
+Once Phase 4 is done, EVEmarchy can be published. Its git history contains
+personal details that shouldn't be public, so publish from a fresh history,
+never by switching the existing repo to public.
+
 ## 6. ESI login (SSO)
 
 We compared this against RIFT's implementation (public fork:
@@ -344,8 +437,11 @@ has it. What changes is how it's packaged.
   protected your PC" warning, so document "More info, then Run anyway". If
   Waggle spreads, sign with Azure Trusted Signing (about $10 a month) or an OV
   certificate.
-- **Linux:** a plain binary or AppImage comes almost for free if the UI
-  toolkit is cross-platform. Nice to have, not a goal.
+- **Omarchy:** an AUR package (`waggle-bin`) containing the binary and the
+  systemd user unit, plus the plugin from this repo (§5b). The release tag
+  bumps both `Cargo.toml` and `manifest.json`.
+- **Plain Linux:** the tray app as a plain binary or AppImage. It comes almost
+  for free if the UI toolkit is cross-platform. Nice to have, not a goal.
 - **CI:** GitHub Actions runs the tests on Ubuntu and Windows for every push. A
   tag builds the Windows installer and zip and attaches them to a GitHub
   release.
@@ -386,7 +482,9 @@ until NFA is ready.
 - Whose EVE developer account owns the Waggle SSO application?
 - Which licence?
 - Public GitHub releases, or a private link shared with friends?
-- Does the Linux build of Waggle ship, or does EVEmarchy stay the only Linux
-  front end?
+- Do Omarchy plugin `entryPoints` accept a subdirectory (`omarchy/BarWidget.qml`),
+  or must the QML sit at the repo root? Check with `omarchy plugin validate`.
+- Does the plain-Linux tray build ship, or is Omarchy the only Linux target?
+- Which ESI scopes does Beehive need, and where do they come from (§5c)?
 - An icon and visual identity (bee and waggle-dance motif, Goonswarm colours
   without using alliance logos).
