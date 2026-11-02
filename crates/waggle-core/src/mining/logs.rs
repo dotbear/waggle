@@ -95,8 +95,10 @@ pub fn header(path: &Path) -> Result<Option<Header>> {
     // The read limit may split a multibyte character far after the header.
     let complete = if utf16 {
         bytes
-            .chunks_exact(2)
-            .rposition(|b| b == [10, 0])
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .rposition(|b| *b == [10, 0])
             .map(|n| (n + 1) * 2)
     } else {
         bytes.iter().rposition(|b| *b == 10).map(|n| n + 1)
@@ -142,8 +144,10 @@ fn decode(bytes: &[u8], utf16: bool) -> Result<String> {
     if utf16 {
         ensure!(bytes.len().is_multiple_of(2), "incomplete UTF-16 data");
         let units = bytes
-            .chunks_exact(2)
-            .map(|b| u16::from_le_bytes([b[0], b[1]]))
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|b| u16::from_le_bytes(*b))
             .collect::<Vec<_>>();
         Ok(String::from_utf16(&units)?)
     } else {
