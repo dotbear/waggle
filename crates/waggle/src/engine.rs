@@ -49,7 +49,13 @@ pub enum Command {
     /// The linked characters changed; pick them up now rather than at the
     /// next periodic check.
     SyncCharacters,
+    MiningStart,
+    MiningStop,
 }
+
+/// A mining session with no yield for this long has ended: one trip, one
+/// session, without anyone having to press Stop.
+const MINING_IDLE_END: i64 = 30 * 60;
 
 /// The keyring this platform has.
 pub fn secrets() -> Arc<dyn PlatformSecrets> {
@@ -157,6 +163,24 @@ async fn run(
         .delivering(config.notifications.enabled);
     let mut alert_policy = AlertPolicy::new();
     let mut mining = MiningService::restore(&store, roots.clone(), Utc::now().timestamp())?;
+    // Waggle's meter starts by itself. Turned on once, the first time, so
+    // someone who later switches it off stays switched off.
+    if let Ok(view) = mining.view(&store, Utc::now().timestamp())
+        && view.preferences.revision == 0
+        && !view.preferences.auto_start
+    {
+        let mut preferences = view.preferences.clone();
+        preferences.auto_start = true;
+        if let Err(error) = mining.command(
+            &store,
+            waggle_core::mining::Command::Preferences {
+                value: Box::new(preferences),
+            },
+            Utc::now().timestamp(),
+        ) {
+            warn!(%error, "Could not turn on mining auto-start");
+        }
+    }
     let mut log_monitor = ChatLogMonitor::new(roots.clone(), Duration::from_secs(5));
     match store.log_checkpoints() {
         Ok(checkpoints) => log_monitor.restore_checkpoints(checkpoints),
@@ -317,12 +341,25 @@ async fn run(
                 }
                 match mining.poll(&store, now) {
                     Ok(updated) => {
-                        let active = mining
-                            .view(&store, now)
-                            .ok()
-                            .and_then(|view| view.session)
-                            .is_some_and(|session| session.end.is_none());
+                        let session = mining.view(&store, now).ok().and_then(|view| view.session);
+                        let active = session.as_ref().is_some_and(|session| session.end.is_none());
                         changed |= updated || active;
+                        // End a session that has gone quiet.
+                        if let Some(session) = session.filter(|session| session.end.is_none()) {
+                            let last = session
+                                .pilots
+                                .iter()
+                                .filter_map(|pilot| pilot.last_yield)
+                                .max()
+                                .unwrap_or(session.start);
+                            if now - last > MINING_IDLE_END {
+                                info!("Ending a mining session after half an hour without yield");
+                                if let Err(error) = mining.command(&store, waggle_core::mining::Command::Stop, now) {
+                                    warn!(%error, "Could not end the idle mining session");
+                                }
+                                changed = true;
+                            }
+                        }
                     }
                     Err(error) => warn!(%error, "Mining poll failed"),
                 }
@@ -403,6 +440,25 @@ async fn run(
                         }
                     }
                     Some(Command::SyncCharacters) => character_sync.reset_immediately(),
+                    Some(Command::MiningStart) => {
+                        let now = Utc::now().timestamp();
+                        // A finished session stays on screen until a new one starts.
+                        let _ = mining.command(&store, waggle_core::mining::Command::Stop, now);
+                        if let Err(error) =
+                            mining.command(&store, waggle_core::mining::Command::Start { label: None }, now)
+                        {
+                            warn!(%error, "Could not start a mining session");
+                        }
+                        changed = true;
+                    }
+                    Some(Command::MiningStop) => {
+                        if let Err(error) =
+                            mining.command(&store, waggle_core::mining::Command::Stop, Utc::now().timestamp())
+                        {
+                            warn!(%error, "Could not stop the mining session");
+                        }
+                        changed = true;
+                    }
                     None => {
                         persist_log_checkpoints(&store, &log_monitor);
                         info!("Engine stopping");

@@ -117,6 +117,14 @@ fn run() -> Result<()> {
         let send = send.clone();
         window.on_refresh_paps(move || send(Command::RefreshPaps));
     }
+    {
+        let send = send.clone();
+        window.on_mining_start(move || send(Command::MiningStart));
+    }
+    {
+        let send = send.clone();
+        window.on_mining_stop(move || send(Command::MiningStop));
+    }
     window.on_open_link(|url| {
         if url.starts_with("https://")
             && let Err(error) = open::that_detached(url.as_str())

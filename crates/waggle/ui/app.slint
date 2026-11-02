@@ -1,7 +1,7 @@
 // Waggle's window: dark and compact, to sit beside the EVE client.
 
 import { Palette, ScrollView } from "std-widgets.slint";
-import { Theme } from "theme.slint";
+import { ActionButton, Theme } from "theme.slint";
 import { SetupView, CharacterItem } from "setup.slint";
 
 export { CharacterItem }
@@ -284,15 +284,32 @@ component PilotItem inherits Rectangle {
 
 component MiningPane inherits VerticalLayout {
     in property <MiningInfo> info;
+    callback start-session();
+    callback stop-session();
     alignment: start;
     padding: 12px;
     spacing: 10px;
-    Text {
-        text: info.title;
-        color: Theme.dim;
-        font-size: Theme.small;
-        font-weight: 700;
-        letter-spacing: 1px;
+    HorizontalLayout {
+        Text {
+            text: info.active ? info.title : info.title + "  ·  ENDED";
+            color: Theme.dim;
+            font-size: Theme.small;
+            font-weight: 700;
+            letter-spacing: 1px;
+            vertical-alignment: center;
+        }
+        Rectangle { }
+        ActionButton {
+            text: info.active ? "Stop" : "New session";
+            primary: !info.active;
+            clicked => {
+                if (info.active) {
+                    root.stop-session();
+                } else {
+                    root.start-session();
+                }
+            }
+        }
     }
     HorizontalLayout {
         spacing: 16px;
@@ -412,6 +429,8 @@ export component AppWindow inherits Window {
     in property <bool> nudge;
 
     callback refresh-paps();
+    callback mining-start();
+    callback mining-stop();
     callback open-link(string);
 
     background: nudge ? Theme.background : Theme.background.darker(0.0001);
@@ -571,12 +590,24 @@ export component AppWindow inherits Window {
                     }
                         }
                     }
-                    if root.tab == 2 && !root.mining.active && root.mining.ores.length == 0: Empty {
-                        title: "Not mining";
-                        hint: "The meter starts by itself when your game log shows a mining laser cycling.";
+                    if root.tab == 2 && !root.mining.active && root.mining.ores.length == 0: VerticalLayout {
+                        alignment: center;
+                        Empty {
+                            title: "Not mining";
+                            hint: "A session starts by itself when your game log shows ore coming in, and ends after half an hour without any.";
+                        }
+                        HorizontalLayout {
+                            alignment: center;
+                            ActionButton {
+                                text: "Start a session now";
+                                clicked => { root.mining-start(); }
+                            }
+                        }
                     }
                     if root.tab == 2 && (root.mining.active || root.mining.ores.length > 0): MiningPane {
                         info: root.mining;
+                        start-session => { root.mining-start(); }
+                        stop-session => { root.mining-stop(); }
                     }
                     if root.tab == 3 && root.pilots.length == 0: Empty {
                         title: "No pilots linked";

@@ -216,9 +216,15 @@ fn mining_info(view: Option<&mining::View>) -> MiningInfo {
             session.label.to_uppercase().into()
         },
         total: format!("{} m³", thousands(session.totals.total_m3)).into(),
+        // An hourly rate from a few seconds of yield is noise; wait for two
+        // minutes of session before quoting one.
         rate: session
             .totals
             .session_rate
+            .filter(|_| {
+                let now = view.map_or(session.start, |view| view.now);
+                session.end.unwrap_or(now) - session.start >= 120
+            })
             .map(|per_second| format!("{} m³", thousands(per_second * 3600.0)))
             .unwrap_or_else(|| "–".to_owned())
             .into(),
