@@ -27,9 +27,31 @@ waggle-core = { path = "../waggle-core" }
 [target.'cfg(windows)'.dependencies]
 tauri-winrt-notification = "=0.8.1"
 tray-icon = "=0.26.1"
+windows-sys = { version = "=0.61.2", features = ["Win32_UI_Shell"] }
 
 [dev-dependencies]
 png = "=0.18.1"
 
 [build-dependencies]
 slint-build = "=1.18.1"
+winresource = "=0.1.34"
+
+# The Windows installer, built by `cargo packager --release -p waggle` on a
+# Windows machine (CI does this). Per user, no administrator rights needed.
+[package.metadata.packager]
+productName = "Waggle"
+identifier = "io.github.dotbear.waggle"
+description = "Lightweight EVE Online intel, Directorbot pings, PAP count and mining meter"
+homepage = "https://github.com/dotbear/waggle"
+publisher = "dotbear"
+licenseFile = "../../LICENSE"
+icons = ["../../assets/waggle.ico"]
+formats = ["nsis"]
+outDir = "../../target/packager"
+beforePackagingCommand = "cargo build --release -p waggle"
+binaries = [{ path = "waggle", main = true }]
+
+[package.metadata.packager.nsis]
+installerMode = "currentUser"
+# Offered as a checkbox when uninstalling, off by default.
+appdataPaths = ["$APPDATA/Waggle", "$LOCALAPPDATA/Waggle/data"]

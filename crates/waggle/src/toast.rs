@@ -7,11 +7,12 @@
 use anyhow::Result;
 use waggle_core::notify::{Notification, NotificationSink};
 
-/// The AppUserModelID toasts are sent under. Windows only shows a toast from
-/// an unpackaged program if a Start Menu shortcut carries this ID, which the
-/// installer creates. Without it (a build run straight from a folder), toasts
-/// go out under PowerShell's ID instead so they still appear.
-pub const APP_USER_MODEL_ID: &str = "dotbear.Waggle";
+/// The AppUserModelID Waggle runs and sends toasts under. Windows only shows
+/// a toast from an unpackaged program if a Start Menu shortcut carries this
+/// ID; the installer creates one (it is the installer's `identifier`). A
+/// build run straight from a folder has no shortcut, so its toasts go out
+/// under PowerShell's ID instead and still appear.
+pub const APP_USER_MODEL_ID: &str = "io.github.dotbear.waggle";
 
 #[derive(Debug)]
 pub struct Desktop {
@@ -29,10 +30,12 @@ impl Desktop {
 
 #[cfg(windows)]
 fn app_id_for_toasts() -> String {
+    // The installer puts the shortcut in a Waggle folder by default; someone
+    // may have moved it to the top level.
     let installed = std::env::var_os("APPDATA").is_some_and(|appdata| {
-        std::path::Path::new(&appdata)
-            .join(r"Microsoft\Windows\Start Menu\Programs\Waggle.lnk")
-            .exists()
+        let programs =
+            std::path::Path::new(&appdata).join(r"Microsoft\Windows\Start Menu\Programs");
+        programs.join(r"Waggle\Waggle.lnk").exists() || programs.join("Waggle.lnk").exists()
     });
     if installed {
         APP_USER_MODEL_ID.to_owned()
@@ -88,3 +91,23 @@ impl NotificationSink for Desktop {
         Ok(())
     }
 }
+
+/// Tells Windows which app this process is, so the taskbar and toasts tie it
+/// to the installed shortcut. Must run before any window exists.
+#[cfg(windows)]
+pub fn declare_app_id() {
+    let wide: Vec<u16> = APP_USER_MODEL_ID
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
+    // SAFETY: a valid, NUL-terminated UTF-16 string that outlives the call.
+    let result = unsafe {
+        windows_sys::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID(wide.as_ptr())
+    };
+    if result < 0 {
+        tracing::warn!(hresult = result, "Could not set the AppUserModelID");
+    }
+}
+
+#[cfg(not(windows))]
+pub fn declare_app_id() {}

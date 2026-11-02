@@ -37,6 +37,7 @@ fn run() -> Result<()> {
     paths.ensure()?;
     let _log_guard = init_logging(&paths);
     info!(version = env!("CARGO_PKG_VERSION"), "Waggle starting");
+    toast::declare_app_id();
 
     // One Waggle per user: a second copy would log into Jabber again and
     // announce every alert twice. The lock is released when the process ends,
