@@ -62,7 +62,20 @@ pub fn install(
     SETUP.with(|slot| *slot.borrow_mut() = Some(Rc::clone(&setup)));
     window.set_jabber_domain(JABBER_DOMAIN.into());
     window.set_can_start_with_windows(cfg!(windows));
-    window.set_data_folder(setup.paths.data_dir.display().to_string().into());
+    window.set_data_folder(
+        format!(
+            "Waggle {}. Settings: {}. Data and logs: {}",
+            env!("CARGO_PKG_VERSION"),
+            setup
+                .paths
+                .config_file
+                .parent()
+                .unwrap_or(&setup.paths.data_dir)
+                .display(),
+            setup.paths.data_dir.display()
+        )
+        .into(),
+    );
     window.set_first_run(first_run);
     setup.populate(window);
     window.set_setup_open(first_run);

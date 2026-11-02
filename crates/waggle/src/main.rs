@@ -66,10 +66,21 @@ fn run() -> Result<()> {
     }
 
     let window = AppWindow::new().context("could not create the window")?;
-    // Closing hides to the tray; Quit in the tray menu ends the program.
-    window
-        .window()
-        .on_close_requested(|| CloseRequestResponse::HideWindow);
+    if let Some(size) = window_size::load(&paths) {
+        window.window().set_size(size);
+    }
+    // Closing hides to the tray; Quit in the tray menu ends the program. The
+    // size is remembered either way.
+    {
+        let weak = window.as_weak();
+        let paths = paths.clone();
+        window.window().on_close_requested(move || {
+            if let Some(window) = weak.upgrade() {
+                window_size::save(&paths, window.window().size());
+            }
+            CloseRequestResponse::HideWindow
+        });
+    }
 
     let tooltip = Arc::new(Mutex::new(String::from("Waggle")));
     // The engine is restarted with new settings when setup saves; whoever
@@ -200,6 +211,7 @@ fn run() -> Result<()> {
     });
 
     slint::run_event_loop_until_quit().context("the window's event loop failed")?;
+    window_size::save(&paths, window.window().size());
     info!("Waggle stopped");
     Ok(())
 }
@@ -260,4 +272,31 @@ fn init_logging(paths: &AppPaths) -> Option<tracing_appender::non_blocking::Work
         .with(fmt::layer().with_writer(std::io::stderr))
         .init();
     guard
+}
+
+/// The window's size between runs. Position is left to Windows: a saved
+/// position on a monitor that is no longer there would put the window out of
+/// reach.
+mod window_size {
+    use slint::PhysicalSize;
+    use waggle::paths::AppPaths;
+
+    fn file(paths: &AppPaths) -> std::path::PathBuf {
+        paths.data_dir.join("window-size")
+    }
+
+    pub fn load(paths: &AppPaths) -> Option<PhysicalSize> {
+        let text = std::fs::read_to_string(file(paths)).ok()?;
+        let (width, height) = text.trim().split_once('x')?;
+        let (width, height) = (width.parse::<u32>().ok()?, height.parse::<u32>().ok()?);
+        // Ignore anything implausible rather than open a sliver of a window.
+        ((200..=8000).contains(&width) && (200..=8000).contains(&height))
+            .then(|| PhysicalSize::new(width, height))
+    }
+
+    pub fn save(paths: &AppPaths, size: PhysicalSize) {
+        if size.width >= 200 && size.height >= 200 {
+            let _ = std::fs::write(file(paths), format!("{}x{}", size.width, size.height));
+        }
+    }
 }
