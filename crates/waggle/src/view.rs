@@ -5,7 +5,7 @@
 
 use std::rc::Rc;
 
-use chrono::{DateTime, Local, TimeZone, Utc};
+use chrono::{DateTime, Local, TimeDelta, TimeZone, Utc};
 use slint::{ModelRc, SharedString, VecModel};
 use waggle_core::{
     directorbot::PapSnapshot,
@@ -30,18 +30,72 @@ pub struct ViewModel {
     pub pilots: Vec<CharacterPresence>,
     pub mining: Option<mining::View>,
     pub update: Option<crate::updates::Update>,
+    /// A Jabber login is set up, so not being connected is a problem.
+    pub jabber_configured: bool,
+    /// Alerts are paused from the tray.
+    pub paused: bool,
 }
 
+/// What the tray icon looks like, so a hidden window still says something.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Mood {
+    #[default]
+    Normal,
+    /// A hostile was reported near a pilot in the last few minutes.
+    Danger,
+    /// Jabber is set up but not connected, or alerts are paused.
+    Muted,
+}
+
+/// How long an intel alert keeps the tray icon red.
+const DANGER_MINUTES: i64 = 5;
+
 impl ViewModel {
-    /// One line for the tray icon's tooltip.
-    pub fn tooltip(&self) -> String {
-        match &self.paps {
+    /// The tray icon's tooltip and colour.
+    pub fn tray(&self) -> (String, Mood) {
+        let mut lines = vec![match &self.paps {
             Some(paps) => format!(
                 "Waggle · PAPs this month {}",
                 pap_pair(paps.month.strategic, paps.month.peacetime)
             ),
             None => "Waggle".to_owned(),
+        }];
+        let recent = self
+            .intel
+            .iter()
+            .filter(|alert| self.now - alert.occurred_at <= TimeDelta::minutes(DANGER_MINUTES))
+            .max_by_key(|alert| alert.occurred_at);
+        let disconnected = self.jabber_configured && !self.jabber_ok;
+        if let Some(alert) = recent {
+            lines.push(format!(
+                "Hostile in {}, {} from {}",
+                alert.system_name,
+                jumps(alert.distance),
+                alert.character_name
+            ));
         }
+        if disconnected {
+            lines.push(self.jabber_text.clone());
+        }
+        if self.paused {
+            lines.push("Alerts paused".to_owned());
+        }
+        let mood = if recent.is_some() {
+            Mood::Danger
+        } else if disconnected || self.paused {
+            Mood::Muted
+        } else {
+            Mood::Normal
+        };
+        (lines.join("\n"), mood)
+    }
+}
+
+fn jumps(distance: u16) -> String {
+    if distance == 1 {
+        "1 jump".to_owned()
+    } else {
+        format!("{distance} jumps")
     }
 }
 
@@ -134,6 +188,7 @@ fn ping_row(ping: &JabberPing, now: DateTime<Utc>) -> PingRow {
             .into(),
         age: age(ping.occurred_at, now).into(),
         muted: ping.muted,
+        target: ping.target.clone().unwrap_or_default().into(),
     }
 }
 
@@ -506,5 +561,71 @@ mod tests {
         let mut short = session.clone();
         short.graph.truncate(1);
         assert_eq!(Graph::of(&short), Graph::default(), "one point is no line");
+    }
+
+    #[test]
+    fn the_tray_turns_red_for_fresh_intel_and_grey_when_cut_off() {
+        let now = Utc::now();
+        let alert = |minutes_ago: i64| IntelAlert {
+            id: 1,
+            occurred_at: now - TimeDelta::minutes(minutes_ago),
+            channel: "intel.example".to_owned(),
+            author: "Example Scout".to_owned(),
+            message: "hostile".to_owned(),
+            system_id: 1,
+            system_name: "EX-AMP".to_owned(),
+            distance: 2,
+            character_id: 1,
+            character_name: "Example Pilot".to_owned(),
+            stale_presence: false,
+            via_bridge: false,
+        };
+        let calm = ViewModel {
+            now,
+            jabber_ok: true,
+            jabber_configured: true,
+            ..ViewModel::default()
+        };
+        assert_eq!(calm.tray(), ("Waggle".to_owned(), Mood::Normal));
+
+        let hot = ViewModel {
+            intel: vec![alert(1)],
+            ..calm.clone()
+        };
+        let (tooltip, mood) = hot.tray();
+        assert_eq!(mood, Mood::Danger);
+        assert!(
+            tooltip.contains("Hostile in EX-AMP, 2 jumps from Example Pilot"),
+            "{tooltip}"
+        );
+        let cooled = ViewModel {
+            intel: vec![alert(6)],
+            ..calm.clone()
+        };
+        assert_eq!(cooled.tray().1, Mood::Normal);
+
+        let cut_off = ViewModel {
+            jabber_ok: false,
+            jabber_text: "Jabber: connection refused".to_owned(),
+            ..calm.clone()
+        };
+        assert_eq!(cut_off.tray().1, Mood::Muted);
+        let never_set_up = ViewModel {
+            jabber_configured: false,
+            ..cut_off.clone()
+        };
+        assert_eq!(
+            never_set_up.tray().1,
+            Mood::Normal,
+            "no login, nothing missing"
+        );
+        let paused = ViewModel {
+            paused: true,
+            ..calm
+        };
+        assert_eq!(
+            paused.tray(),
+            ("Waggle\nAlerts paused".to_owned(), Mood::Muted)
+        );
     }
 }

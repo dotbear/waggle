@@ -51,8 +51,14 @@ Waggle opens on its setup view:
 4. **Intel channels**: named exactly as EVE shows them.
 
 Press **Start**. Closing the window hides it to the tray; the honeycomb icon
-brings it back, and its menu has **Quit**. The gear in the corner reopens
-setup.
+brings it back, and its menu pauses alerts for 15 minutes or an hour, and
+has **Quit**. The honeycomb turns red for a few minutes after a hostile is
+reported near a pilot, and grey while Jabber is down or alerts are paused.
+The gear in the corner reopens setup.
+
+Pings from a Directorbot group you don't care about can be muted with
+**Mute** on the ping: they stay in the list but never pop up. Settings lists
+the muted groups, to unmute them.
 
 Settings live in `%APPDATA%\Waggle`, everything else (state, logs) in
 `%LOCALAPPDATA%\Waggle\data`.

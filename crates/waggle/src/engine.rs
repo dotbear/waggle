@@ -54,6 +54,8 @@ pub enum Command {
     /// Hold back notifications for this long, or resume them with `None`.
     /// Everything is still recorded and shown in the window.
     PauseAlerts(Option<Duration>),
+    /// Directorbot targets whose pings are kept but not announced.
+    SetMuted(Vec<String>),
 }
 
 /// The keyring this platform has.
@@ -206,6 +208,9 @@ async fn run(
         "Waggle engine started"
     );
 
+    // Changed from the pings list without restarting the engine.
+    let mutes = std::cell::RefCell::new(config.jabber.clone());
+    let is_muted = |target: Option<&str>| mutes.borrow().target_is_muted(target);
     let view = |presence_state: &[CharacterPresence],
                 jabber_connection: &Option<ConnectionStatus>,
                 mining: &MiningService,
@@ -216,7 +221,7 @@ async fn run(
         let now = Utc::now();
         let mut pings = store.recent_jabber_pings(30)?;
         for ping in &mut pings {
-            ping.muted = config.jabber.target_is_muted(ping.target.as_deref());
+            ping.muted = is_muted(ping.target.as_deref());
         }
         let (jabber_text, jabber_ok) =
             match (jabber_configured, jabber_credential, jabber_connection) {
@@ -260,6 +265,8 @@ async fn run(
             pilots: presence_state.to_vec(),
             mining: mining.view(&store, now.timestamp()).ok(),
             update: update.clone(),
+            jabber_configured,
+            paused: paused_until.is_some_and(|until| until > now),
         })
     };
     publish(view(
@@ -428,7 +435,7 @@ async fn run(
                             || age > TimeDelta::seconds(
                                 i64::try_from(config.jabber.freshness_seconds).unwrap_or(i64::MAX),
                             );
-                        let muted = config.jabber.target_is_muted(ping.target.as_deref());
+                        let muted = is_muted(ping.target.as_deref());
                         if let Some(stored) = store.record_jabber_ping(&ping, baseline || muted)? {
                             if !baseline && !muted {
                                 if is_paused(paused_until) {
@@ -485,6 +492,11 @@ async fn run(
                             Utc::now() + TimeDelta::from_std(duration).unwrap_or(TimeDelta::hours(1))
                         });
                         info!(?paused_until, "Alerts paused or resumed");
+                        changed = true;
+                    }
+                    Some(Command::SetMuted(targets)) => {
+                        info!(count = targets.len(), "Muted ping groups changed");
+                        mutes.borrow_mut().muted_targets = targets;
                         changed = true;
                     }
                     Some(Command::MiningStop) => {

@@ -217,6 +217,8 @@ fn sample() -> view::ViewModel {
         ],
         // The core's own demo session, through the real mapping.
         mining: Some(waggle_core::mining::demo(now.timestamp())),
+        jabber_configured: true,
+        paused: false,
         // WAGGLE_SAMPLE_UPDATE=1 shows the update banner too.
         update: std::env::var_os("WAGGLE_SAMPLE_UPDATE").map(|_| waggle::updates::Update {
             version: "0.2.0".to_owned(),
@@ -271,7 +273,7 @@ fn ping(
         from: "directorbot@example.invalid".to_owned(),
         source: None,
         sender: None,
-        target: muted.then(|| "newsletter".to_owned()),
+        target: Some(if muted { "newsletter" } else { "fleet-ops" }.to_owned()),
         summary: "Recruitment newsletter for the opt-in group".to_owned(),
         description: String::new(),
         fc: some(fc),

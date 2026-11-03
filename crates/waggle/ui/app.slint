@@ -28,6 +28,7 @@ export struct PingRow {
     age: string,
     strategic: bool,
     muted: bool,
+    target: string,
 }
 
 export struct PilotRow {
@@ -258,6 +259,7 @@ component IntelItem inherits Rectangle {
 component PingItem inherits Rectangle {
     in property <PingRow> item;
     callback open-link(string);
+    callback toggle-mute(string);
     opacity: item.muted ? 0.55 : 1.0;
     background: item.link != "" && ping-touch.has-hover ? Theme.raised : transparent;
     ping-touch := TouchArea {
@@ -304,6 +306,27 @@ component PingItem inherits Rectangle {
             color: item.link != "" ? Theme.blue : Theme.faint;
             font-size: Theme.small;
             overflow: elide;
+        }
+        // Who Directorbot sent it to, and a way to stop hearing from them.
+        if item.target != "": HorizontalLayout {
+            spacing: 6px;
+            Text {
+                text: "to " + item.target + (item.muted ? "  ·  muted" : "");
+                color: Theme.faint;
+                font-size: Theme.small;
+                overflow: elide;
+            }
+            Rectangle { }
+            mute-touch := TouchArea {
+                width: mute-text.preferred-width;
+                mouse-cursor: pointer;
+                clicked => { root.toggle-mute(item.target); }
+                mute-text := Text {
+                    text: item.muted ? "Unmute" : "Mute";
+                    color: mute-touch.has-hover ? Theme.text : Theme.dim;
+                    font-size: Theme.small;
+                }
+            }
         }
     }
     Rectangle {
@@ -495,6 +518,7 @@ export component AppWindow inherits Window {
     in property <bool> jabber-password-saved <=> setup.jabber-password-saved;
     in property <string> jabber-domain <=> setup.jabber-domain;
     in property <[CharacterItem]> setup-channels <=> setup.channels;
+    in property <[CharacterItem]> setup-muted <=> setup.muted;
     in-out property <string> new-channel <=> setup.new-channel;
     in-out property <int> max-jumps <=> setup.max-jumps;
     in-out property <bool> only-undocked <=> setup.only-undocked;
@@ -509,6 +533,8 @@ export component AppWindow inherits Window {
     callback import-rift <=> setup.import-rift;
     callback add-channel <=> setup.add-channel;
     callback remove-channel <=> setup.remove-channel;
+    callback unmute <=> setup.unmute;
+    callback toggle-mute(string);
     callback save-setup <=> setup.save;
     callback cancel-setup <=> setup.cancel;
     callback test-alert <=> setup.test-alert;
@@ -691,6 +717,7 @@ export component AppWindow inherits Window {
                             for row in root.pings: PingItem {
                         item: row;
                         open-link(url) => { root.open-link(url); }
+                        toggle-mute(target) => { root.toggle-mute(target); }
                     }
                         }
                     }

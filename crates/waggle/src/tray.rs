@@ -11,7 +11,8 @@ pub enum TrayAction {
     Open,
     Settings,
     RefreshPaps,
-    PauseAlerts,
+    /// For this many minutes.
+    PauseAlerts(u16),
     ResumeAlerts,
     Quit,
 }
@@ -28,12 +29,14 @@ mod windows {
     };
 
     use super::TrayAction;
+    use crate::view::Mood;
 
     pub struct Tray {
         icon: TrayIcon,
         open: MenuId,
         settings: MenuId,
         refresh: MenuId,
+        pause_short: MenuId,
         pause: MenuId,
         resume: MenuId,
         quit: MenuId,
@@ -44,6 +47,7 @@ mod windows {
             let menu = Menu::new();
             let open = MenuItem::new("Open Waggle", true, None);
             let settings = MenuItem::new("Settings…", true, None);
+            let pause_short = MenuItem::new("Pause alerts for 15 minutes", true, None);
             let pause = MenuItem::new("Pause alerts for 1 hour", true, None);
             let resume = MenuItem::new("Resume alerts", true, None);
             let refresh = MenuItem::new("Refresh PAPs", true, None);
@@ -53,6 +57,7 @@ mod windows {
                 &settings,
                 &refresh,
                 &PredefinedMenuItem::separator(),
+                &pause_short,
                 &pause,
                 &resume,
                 &PredefinedMenuItem::separator(),
@@ -62,13 +67,14 @@ mod windows {
             let icon = TrayIconBuilder::new()
                 .with_menu(Box::new(menu))
                 .with_tooltip("Waggle")
-                .with_icon(icon()?)
+                .with_icon(icon(Mood::Normal)?)
                 .build()
                 .context("could not create the tray icon")?;
             Ok(Self {
                 icon,
                 open: open.id().clone(),
                 settings: settings.id().clone(),
+                pause_short: pause_short.id().clone(),
                 pause: pause.id().clone(),
                 resume: resume.id().clone(),
                 refresh: refresh.id().clone(),
@@ -84,8 +90,10 @@ mod windows {
                     actions.push(TrayAction::Open);
                 } else if event.id == self.settings {
                     actions.push(TrayAction::Settings);
+                } else if event.id == self.pause_short {
+                    actions.push(TrayAction::PauseAlerts(15));
                 } else if event.id == self.pause {
-                    actions.push(TrayAction::PauseAlerts);
+                    actions.push(TrayAction::PauseAlerts(60));
                 } else if event.id == self.resume {
                     actions.push(TrayAction::ResumeAlerts);
                 } else if event.id == self.refresh {
@@ -112,13 +120,43 @@ mod windows {
         pub fn set_tooltip(&self, text: &str) {
             let _ = self.icon.set_tooltip(Some(text));
         }
+
+        pub fn set_mood(&self, mood: Mood) {
+            if let Ok(icon) = icon(mood) {
+                let _ = self.icon.set_icon(Some(icon));
+            }
+        }
     }
 
-    fn icon() -> Result<Icon> {
+    fn icon(mood: Mood) -> Result<Icon> {
         // Written by scripts/make-icon.py: 32x32 pixels, RGBA.
-        let rgba = include_bytes!("../ui/tray-32.rgba");
-        Icon::from_rgba(rgba.to_vec(), 32, 32).context("the tray icon image is invalid")
+        let rgba = super::recolour(include_bytes!("../ui/tray-32.rgba"), mood);
+        Icon::from_rgba(rgba, 32, 32).context("the tray icon image is invalid")
     }
+}
+
+/// The honeycomb in the mood's colour: as drawn when all is well, red when
+/// hostiles are near, grey when Jabber is down or alerts are paused. Pixels
+/// keep their brightness and alpha, so the outline and shading survive.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn recolour(rgba: &[u8], mood: crate::view::Mood) -> Vec<u8> {
+    use crate::view::Mood;
+    let mut out = rgba.to_vec();
+    if mood == Mood::Normal {
+        return out;
+    }
+    for pixel in out.as_chunks_mut::<4>().0 {
+        let [r, g, b] = [pixel[0], pixel[1], pixel[2]].map(f32::from);
+        let light = 0.299 * r + 0.587 * g + 0.114 * b;
+        let [r, g, b] = match mood {
+            Mood::Danger => [light * 1.6, light * 0.35, light * 0.3],
+            _ => [light * 0.8; 3],
+        };
+        pixel[0] = r.min(255.0) as u8;
+        pixel[1] = g.min(255.0) as u8;
+        pixel[2] = b.min(255.0) as u8;
+    }
+    out
 }
 
 /// On other platforms there is no tray yet; the window is the app.
@@ -136,4 +174,22 @@ impl Tray {
     }
 
     pub fn set_tooltip(&self, _text: &str) {}
+
+    pub fn set_mood(&self, _mood: crate::view::Mood) {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::view::Mood;
+
+    #[test]
+    fn moods_recolour_without_touching_alpha() {
+        let gold = [224, 168, 58, 200];
+        assert_eq!(recolour(&gold, Mood::Normal), gold);
+        let red = recolour(&gold, Mood::Danger);
+        assert!(red[0] > red[1] && red[0] > red[2] && red[3] == 200);
+        let grey = recolour(&gold, Mood::Muted);
+        assert!(grey[0] == grey[1] && grey[1] == grey[2] && grey[3] == 200);
+    }
 }

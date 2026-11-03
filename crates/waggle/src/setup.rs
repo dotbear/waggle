@@ -31,6 +31,8 @@ pub struct Hooks {
     pub restart: Box<dyn Fn(Config)>,
     /// Tell the engine the linked characters changed.
     pub characters_changed: Box<dyn Fn()>,
+    /// Tell the engine which ping groups are muted now.
+    pub muted_changed: Box<dyn Fn(Vec<String>)>,
 }
 
 struct Setup {
@@ -146,15 +148,31 @@ pub fn install(
         }
     });
 
+    let s = Rc::clone(&setup);
+    window.on_unmute(move |index| {
+        let mut draft = s.draft.borrow_mut();
+        if (index as usize) < draft.jabber.muted_targets.len() {
+            draft.jabber.muted_targets.remove(index as usize);
+        }
+        drop(draft);
+        if let Some(window) = s.window.upgrade() {
+            s.populate_muted(&window);
+        }
+    });
+
+    let s = Rc::clone(&setup);
+    window.on_toggle_mute(move |target| s.toggle_mute(target.as_str()));
+
     window.on_test_alert(|| {
-        use waggle_core::notify::{Notification, NotificationSink, Urgency};
+        use waggle_core::notify::{GLYPH_INTEL, Notification, NotificationSink, Urgency};
         // The real intel shape and sound, so this is what a hostile sounds like.
         let sample = Notification {
             title: "Test: hostile 1 jump from your pilot".to_owned(),
             body: "This is what an intel alert looks and sounds like.".to_owned(),
-            category: "intel",
+            category: "im.received",
             urgency: Urgency::High,
-            glyph: "",
+            // The toast picks its sound by glyph.
+            glyph: GLYPH_INTEL,
             icon: "",
             image: None,
             replace_tag: None,
@@ -215,7 +233,59 @@ impl Setup {
             .set_rift_available(import::default_rift_settings().is_some_and(|path| path.exists()));
         drop(draft);
         self.populate_channels(window);
+        self.populate_muted(window);
         self.populate_characters(window);
+    }
+
+    fn populate_muted(&self, window: &AppWindow) {
+        let rows = self
+            .draft
+            .borrow()
+            .jabber
+            .muted_targets
+            .iter()
+            .map(|name| CharacterItem {
+                name: name.clone().into(),
+                detail: SharedString::new(),
+            })
+            .collect::<Vec<_>>();
+        window.set_setup_muted(ModelRc::from(Rc::new(VecModel::from(rows))));
+    }
+
+    /// Mutes or unmutes a Directorbot target from the pings list. Takes
+    /// effect at once: written straight to the settings file (not the
+    /// draft's other, unsaved changes) and sent to the running engine.
+    fn toggle_mute(&self, target: &str) {
+        let target = target.trim();
+        if target.is_empty() {
+            return;
+        }
+        let result = (|| -> Result<Vec<String>> {
+            let mut config = Config::load(&self.paths.config_file)?;
+            let targets = &mut config.jabber.muted_targets;
+            let before = targets.len();
+            targets.retain(|muted| !muted.trim().eq_ignore_ascii_case(target));
+            if targets.len() == before {
+                targets.push(target.to_owned());
+            }
+            config.save(&self.paths.config_file)?;
+            Ok(config.jabber.muted_targets)
+        })();
+        match result {
+            Ok(targets) => {
+                info!(
+                    target,
+                    muted = targets.iter().any(|t| t == target),
+                    "Ping group mute toggled"
+                );
+                self.draft.borrow_mut().jabber.muted_targets = targets.clone();
+                if let Some(window) = self.window.upgrade() {
+                    self.populate_muted(&window);
+                }
+                (self.hooks.muted_changed)(targets);
+            }
+            Err(error) => warn!(error = %format!("{error:#}"), "Could not change the muted groups"),
+        }
     }
 
     fn populate_channels(&self, window: &AppWindow) {

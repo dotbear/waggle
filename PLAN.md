@@ -301,6 +301,10 @@ Built and checked by driving the Windows 11 VM:
   running copy (it offers to close it), uninstall keeps settings and data
   unless asked.
 
+Added for 0.1.1: the tray icon turns red after nearby intel and grey while
+Jabber is down or alerts are paused; pause for 15 minutes as well as an
+hour; mute a Directorbot group from its ping, unmute it in settings.
+
 Not yet done: a real character login and Jabber connection end to end,
 toast sound on real hardware, intel alerts with a real pilot in space, and
 an icon better than the placeholder. The first friend to install it does the

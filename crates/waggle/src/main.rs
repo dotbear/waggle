@@ -91,7 +91,7 @@ fn run() -> Result<()> {
         });
     }
 
-    let tooltip = Arc::new(Mutex::new(String::from("Waggle")));
+    let tooltip = Arc::new(Mutex::new((String::from("Waggle"), view::Mood::Normal)));
     // The engine is restarted with new settings when setup saves; whoever
     // sends it commands goes through this one handle.
     let start_engine = {
@@ -102,8 +102,8 @@ fn run() -> Result<()> {
             let weak = weak.clone();
             let tooltip = Arc::clone(&tooltip);
             engine::spawn(paths.clone(), config, move |view| {
-                if let Ok(mut text) = tooltip.lock() {
-                    *text = view.tooltip();
+                if let Ok(mut shown) = tooltip.lock() {
+                    *shown = view.tray();
                 }
                 let weak = weak.clone();
                 let _ = slint::invoke_from_event_loop(move || {
@@ -160,6 +160,10 @@ fn run() -> Result<()> {
                 let send = send.clone();
                 move || send(Command::SyncCharacters)
             }),
+            muted_changed: Box::new({
+                let send = send.clone();
+                move |targets| send(Command::SetMuted(targets))
+            }),
         },
     );
 
@@ -198,7 +202,7 @@ fn run() -> Result<()> {
             Ok(tray) => TRAY.with(|slot| *slot.borrow_mut() = Some(tray)),
             Err(error) => warn!(error = %format!("{error:#}"), "No tray icon"),
         }
-        let mut shown_tooltip = String::new();
+        let mut shown = (String::new(), view::Mood::Normal);
         TRAY_POLL.with(|timer| {
             timer.start(TimerMode::Repeated, Duration::from_millis(100), move || {
                 let actions = TRAY.with(|slot| {
@@ -206,11 +210,16 @@ fn run() -> Result<()> {
                     let Some(tray) = slot.as_ref() else {
                         return Vec::new();
                     };
-                    if let Ok(text) = tooltip.lock()
-                        && *text != shown_tooltip
+                    if let Ok(wanted) = tooltip.lock()
+                        && *wanted != shown
                     {
-                        tray.set_tooltip(&text);
-                        shown_tooltip = text.clone();
+                        if wanted.0 != shown.0 {
+                            tray.set_tooltip(&wanted.0);
+                        }
+                        if wanted.1 != shown.1 {
+                            tray.set_mood(wanted.1);
+                        }
+                        shown = wanted.clone();
                     }
                     tray.actions()
                 });
@@ -230,9 +239,9 @@ fn run() -> Result<()> {
                             }
                         }
                         TrayAction::RefreshPaps => send(Command::RefreshPaps),
-                        TrayAction::PauseAlerts => {
-                            send(Command::PauseAlerts(Some(Duration::from_secs(3600))))
-                        }
+                        TrayAction::PauseAlerts(minutes) => send(Command::PauseAlerts(Some(
+                            Duration::from_secs(u64::from(minutes) * 60),
+                        ))),
                         TrayAction::ResumeAlerts => send(Command::PauseAlerts(None)),
                         TrayAction::Quit => {
                             info!("Quit from the tray");

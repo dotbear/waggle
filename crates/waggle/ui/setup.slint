@@ -86,6 +86,7 @@ export component SetupView inherits Rectangle {
     in property <bool> jabber-password-saved;
     in property <string> jabber-domain;
     in property <[CharacterItem]> channels;
+    in property <[CharacterItem]> muted;
     in-out property <string> new-channel;
     in-out property <int> max-jumps: 2;
     in-out property <bool> only-undocked: true;
@@ -100,6 +101,7 @@ export component SetupView inherits Rectangle {
     callback import-rift();
     callback add-channel(string);
     callback remove-channel(int);
+    callback unmute(int);
     callback save();
     callback test-alert();
     callback cancel();
@@ -180,6 +182,17 @@ export component SetupView inherits Rectangle {
                         input-type: password;
                         placeholder-text: root.jabber-password-saved ? "password saved (type to replace)" : "password";
                         text <=> root.jabber-password;
+                    }
+                    if root.muted.length > 0: Text {
+                        text: "Muted ping groups: kept in the list, never announced. Mute more from a ping.";
+                        color: Theme.dim;
+                        font-size: Theme.small;
+                        wrap: word-wrap;
+                    }
+                    for group[index] in root.muted: RemovableRow {
+                        label: group.name;
+                        detail: group.detail;
+                        remove => { root.unmute(index); }
                     }
                 }
 
