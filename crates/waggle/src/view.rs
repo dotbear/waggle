@@ -223,11 +223,11 @@ pub fn mining_info(view: Option<&mining::View>) -> MiningInfo {
         },
         _ => (0.0, String::new()),
     };
-    // A rate from a few seconds of yield is noise; wait for two minutes of
-    // session before quoting one.
+    // A live rate from a few seconds of yield is noise; wait for two minutes
+    // of session before quoting one. A finished session's is exact.
     let rate = session.totals.session_rate.filter(|_| {
         let now = view.map_or(session.start, |view| view.now);
-        session.end.unwrap_or(now) - session.start >= 120
+        session.end.is_some() || now - session.start >= 120
     });
     MiningInfo {
         active: session.end.is_none(),
