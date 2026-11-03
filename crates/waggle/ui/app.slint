@@ -45,14 +45,96 @@ export struct OreRow {
     amount: string,
 }
 
+export struct MiningGraph {
+    shown: bool,
+    line: string,
+    area: string,
+    top: string,
+    average: float,
+    from: string,
+    to: string,
+}
+
 export struct MiningInfo {
     active: bool,
     title: string,
     total: string,
     rate: string,
+    rate-hour: string,
     hold-percent: float,
     hold-text: string,
     ores: [OreRow],
+    graph: MiningGraph,
+}
+
+/// Yield over the last few minutes, with the session average dashed across.
+component YieldGraph inherits VerticalLayout {
+    in property <MiningGraph> graph;
+    spacing: 2px;
+    HorizontalLayout {
+        Text {
+            text: graph.top;
+            color: Theme.faint;
+            font-size: Theme.small;
+        }
+        Rectangle { }
+        if graph.average >= 0: Text {
+            text: "- - average";
+            color: Theme.faint;
+            font-size: Theme.small;
+        }
+    }
+    Rectangle {
+        height: 90px;
+        border-width: 1px;
+        border-color: Theme.line;
+        border-radius: 4px;
+        clip: true;
+        Path {
+            width: parent.width;
+            height: parent.height;
+            viewbox-width: 1000;
+            viewbox-height: 100;
+            // Stretch to the box; the default keeps the 10:1 aspect.
+            fit: fill;
+            commands: graph.area;
+            fill: Theme.gold.with-alpha(0.15);
+            stroke: transparent;
+        }
+        Path {
+            width: parent.width;
+            height: parent.height;
+            viewbox-width: 1000;
+            viewbox-height: 100;
+            // Stretch to the box; the default keeps the 10:1 aspect.
+            fit: fill;
+            commands: graph.line;
+            fill: transparent;
+            stroke: Theme.gold;
+            stroke-width: 1.5px;
+        }
+        if graph.average >= 0: HorizontalLayout {
+            y: parent.height * (1 - graph.average) - 0.5px;
+            height: 1px;
+            spacing: 4px;
+            for _ in 40: Rectangle {
+                background: Theme.dim;
+            }
+        }
+    }
+    HorizontalLayout {
+        Text {
+            text: graph.from;
+            color: Theme.faint;
+            font-size: Theme.small;
+        }
+        Rectangle { }
+        Text {
+            text: graph.to;
+            color: Theme.faint;
+            font-size: Theme.small;
+        }
+    }
 }
 
 component Badge inherits Rectangle {
@@ -300,7 +382,7 @@ component MiningPane inherits VerticalLayout {
         }
         Rectangle { }
         ActionButton {
-            text: info.active ? "Stop" : "New session";
+            text: info.active ? "Stop" : "Start";
             primary: !info.active;
             clicked => {
                 if (info.active) {
@@ -334,13 +416,14 @@ component MiningPane inherits VerticalLayout {
                 font-weight: 700;
             }
             Text {
-                text: "per hour";
+                text: info.rate-hour == "" ? "average" : "average · " + info.rate-hour;
                 color: Theme.faint;
                 font-size: Theme.small;
             }
         }
     }
-    VerticalLayout {
+    // Only once ESI has said which ship, and so how big its hold is.
+    if info.hold-text != "": VerticalLayout {
         spacing: 4px;
         Rectangle {
             height: 8px;
@@ -358,6 +441,9 @@ component MiningPane inherits VerticalLayout {
             color: Theme.dim;
             font-size: Theme.small;
         }
+    }
+    if info.graph.shown: YieldGraph {
+        graph: info.graph;
     }
     for ore in info.ores: HorizontalLayout {
         Text {
@@ -612,7 +698,7 @@ export component AppWindow inherits Window {
                         alignment: center;
                         Empty {
                             title: "Not mining";
-                            hint: "A session starts by itself when your game log shows ore coming in, and ends after half an hour without any.";
+                            hint: "A session starts by itself when your game log shows ore coming in, and ends after five minutes without any.";
                         }
                         HorizontalLayout {
                             alignment: center;

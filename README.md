@@ -11,8 +11,10 @@ Waggle does four things and nothing else:
   hostile is reported near one of your characters, counting jump bridges.
 - **Pings**: Directorbot fleet pings over Jabber, as desktop notifications.
 - **PAP count**: your participation numbers, fetched from Directorbot.
-- **Mining meter**: what you've actually mined, read from your game logs, and
-  how full your hold is.
+- **Mining meter**: what you've actually mined, read from your game logs, in
+  m³/s with a graph, and how full your hold is. A session starts when ore
+  comes in and ends after five minutes without any. It warns you when your
+  hold fills, a rock runs out, your lasers stop, or someone tackles you.
 
 It also tells you when a skill finishes or a skill queue runs dry.
 

@@ -5,7 +5,7 @@
 
 use std::rc::Rc;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, TimeZone, Utc};
 use slint::{ModelRc, SharedString, VecModel};
 use waggle_core::{
     directorbot::PapSnapshot,
@@ -178,16 +178,18 @@ fn pilot_row(pilot: &CharacterPresence, now: DateTime<Utc>) -> PilotRow {
     }
 }
 
-fn mining_info(view: Option<&mining::View>) -> MiningInfo {
+pub fn mining_info(view: Option<&mining::View>) -> MiningInfo {
     let Some(session) = view.and_then(|view| view.session.as_ref()) else {
         return MiningInfo {
             active: false,
             title: SharedString::new(),
             total: SharedString::new(),
             rate: SharedString::new(),
+            rate_hour: SharedString::new(),
             hold_percent: 0.0,
             hold_text: SharedString::new(),
             ores: model(std::iter::empty()),
+            graph: Graph::default().into(),
         };
     };
     let mut ores: Vec<(String, f64)> = Vec::new();
@@ -221,6 +223,12 @@ fn mining_info(view: Option<&mining::View>) -> MiningInfo {
         },
         _ => (0.0, String::new()),
     };
+    // A rate from a few seconds of yield is noise; wait for two minutes of
+    // session before quoting one.
+    let rate = session.totals.session_rate.filter(|_| {
+        let now = view.map_or(session.start, |view| view.now);
+        session.end.unwrap_or(now) - session.start >= 120
+    });
     MiningInfo {
         active: session.end.is_none(),
         title: if session.label.is_empty() {
@@ -229,17 +237,13 @@ fn mining_info(view: Option<&mining::View>) -> MiningInfo {
             session.label.to_uppercase().into()
         },
         total: format!("{} m³", thousands(session.totals.total_m3)).into(),
-        // An hourly rate from a few seconds of yield is noise; wait for two
-        // minutes of session before quoting one.
-        rate: session
-            .totals
-            .session_rate
-            .filter(|_| {
-                let now = view.map_or(session.start, |view| view.now);
-                session.end.unwrap_or(now) - session.start >= 120
-            })
-            .map(|per_second| format!("{} m³", thousands(per_second * 3600.0)))
+        rate: rate
+            .map(|per_second| format!("{per_second:.2} m³/s"))
             .unwrap_or_else(|| "–".to_owned())
+            .into(),
+        rate_hour: rate
+            .map(|per_second| format!("{} m³/h", thousands(per_second * 3600.0)))
+            .unwrap_or_default()
             .into(),
         hold_percent,
         hold_text: hold_text.into(),
@@ -247,7 +251,97 @@ fn mining_info(view: Option<&mining::View>) -> MiningInfo {
             name: name.into(),
             amount: format!("{} m³", thousands(m3)).into(),
         })),
+        graph: {
+            let mut graph = Graph::of(session);
+            // The same two minutes the headline waits before quoting an average.
+            if rate.is_none() {
+                graph.average = None;
+            }
+            graph.into()
+        },
     }
+}
+
+/// The yield graph as SVG paths in a 1000 × 100 box, y pointing down.
+#[derive(Debug, Default, PartialEq)]
+struct Graph {
+    line: String,
+    area: String,
+    /// The top of the scale, in m³/s.
+    top: f64,
+    /// The session average as a fraction of the height from the bottom.
+    average: Option<f64>,
+    from: String,
+    to: String,
+}
+
+impl Graph {
+    fn of(session: &mining::SessionView) -> Self {
+        let points = &session.graph;
+        if points.len() < 2 {
+            return Self::default();
+        }
+        let rates: Vec<f64> = points.iter().map(|p| p.ordinary + p.bonus).collect();
+        let average = session.totals.session_rate.filter(|r| *r > 0.0);
+        let peak = rates.iter().copied().chain(average).fold(0.0_f64, f64::max);
+        if peak <= 0.0 {
+            return Self::default();
+        }
+        let top = nice_ceiling(peak * 1.1);
+        let last = (rates.len() - 1) as f64;
+        let xy = |i: usize, rate: f64| (i as f64 * 1000.0 / last, 100.0 - rate / top * 100.0);
+        let mut line = String::new();
+        for (i, rate) in rates.iter().enumerate() {
+            let (x, y) = xy(i, *rate);
+            line += &format!("{}{x:.1} {y:.1} ", if i == 0 { "M" } else { "L" });
+        }
+        let area = format!("{line}L 1000 100 L 0 100 Z");
+        let clock = |at: i64| {
+            Local
+                .timestamp_opt(at, 0)
+                .single()
+                .map(|t| t.format("%H:%M").to_string())
+                .unwrap_or_default()
+        };
+        Self {
+            line: line.trim_end().to_owned(),
+            area,
+            top,
+            average: average.map(|a| a / top),
+            from: clock(points[0].at),
+            to: clock(points[points.len() - 1].at),
+        }
+    }
+}
+
+impl From<Graph> for crate::MiningGraph {
+    fn from(graph: Graph) -> Self {
+        Self {
+            shown: !graph.line.is_empty(),
+            line: graph.line.into(),
+            area: graph.area.into(),
+            top: if graph.top >= 10.0 {
+                format!("{:.0} m³/s", graph.top)
+            } else {
+                format!("{:.1} m³/s", graph.top)
+            }
+            .into(),
+            average: graph.average.map_or(-1.0, |a| a as f32),
+            from: graph.from.into(),
+            to: graph.to.into(),
+        }
+    }
+}
+
+/// The next of 1, 2, 2.5, 5 × 10ⁿ at or above `value`, so the scale's top
+/// reads as a round number.
+fn nice_ceiling(value: f64) -> f64 {
+    let magnitude = 10_f64.powf(value.log10().floor());
+    [1.0, 2.0, 2.5, 5.0, 10.0]
+        .into_iter()
+        .map(|step| step * magnitude)
+        .find(|candidate| *candidate >= value)
+        .unwrap_or(value)
 }
 
 /// How long ago, in the fewest characters that still read naturally.
@@ -385,5 +479,32 @@ mod tests {
         assert!(row.strategic);
         assert_eq!(row.pap_type, "Strategic");
         assert_eq!(row.title, "Home Defence");
+    }
+
+    #[test]
+    fn the_scale_tops_out_at_a_round_number() {
+        assert_eq!(nice_ceiling(0.73), 1.0);
+        assert_eq!(nice_ceiling(1.3), 2.0);
+        assert_eq!(nice_ceiling(2.2), 2.5);
+        assert_eq!(nice_ceiling(37.0), 50.0);
+        assert_eq!(nice_ceiling(120.0), 200.0);
+    }
+
+    #[test]
+    fn the_graph_spans_the_box_and_marks_the_average() {
+        let now = 1_790_000_000;
+        let session = waggle_core::mining::demo(now).session.unwrap();
+        let graph = Graph::of(&session);
+        assert!(graph.line.starts_with("M0.0 "), "{}", graph.line);
+        assert!(graph.line.contains("L1000.0 "), "ends at the right edge");
+        assert_eq!(graph.line.matches(['M', 'L']).count(), session.graph.len());
+        assert!(graph.area.ends_with("Z"));
+        let average = graph.average.unwrap();
+        assert!(average > 0.0 && average < 1.0);
+        assert!(!graph.from.is_empty() && !graph.to.is_empty());
+
+        let mut short = session.clone();
+        short.graph.truncate(1);
+        assert_eq!(Graph::of(&short), Graph::default(), "one point is no line");
     }
 }

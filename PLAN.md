@@ -24,7 +24,7 @@ Waggle covers:
 | Intel alerts | Chat-log scanning, proximity to your characters via ESI location, jump bridges |
 | Directorbot pings | Jabber client, notifications, mutable groups, replay suppression |
 | PAP count | `!me` to Directorbot, parsed (see EVEmarchy `docs/pap-investigation.md`) |
-| Mining meter | Yield from game logs, hold size from hull and skills, sessions and graph |
+| Mining meter | Yield from game logs, hold size from hull and skills, the current session and its graph, alerts when the lasers stop |
 | Skill queue | Notifies when a skill finishes or the queue runs dry. Nearly free to include. |
 | RIFT import | First-run, one-time import of Jabber login, intel channels and jump bridges |
 
@@ -291,8 +291,12 @@ Built and checked by driving the Windows 11 VM:
   Windows, Send a test alert.
 - Toasts with a sound per kind, credited to "Waggle" once installed;
   clicking one brings the window up. Pings with a comms link open it.
-- Mining: auto-start on first run, ends after 30 minutes idle, New session
-  and Stop; verified against a synthetic game log (exact volume).
+- Mining: a session starts with the first yield and ends after five
+  minutes without one (both in the core, so EVEmarchy behaves the same);
+  only the current or last session is kept. Session average in m³/s and a
+  yield graph. Toasts for a full hold, a depleted rock, drifting out of
+  range, lasers stopping, charges running out, and being tackled or shot
+  while mining. Verified against a synthetic game log (exact volume).
 - Installer from CI: per user, branded, no licence page, upgrade over a
   running copy (it offers to close it), uninstall keeps settings and data
   unless asked.
@@ -336,9 +340,10 @@ Small, can be pinned, dark by default:
 - **Intel feed:** system, jumps from the nearest character, who reported it,
   age. Rows fade as they get old, using `intel.freshness_seconds`.
 - **Pings feed:** the latest Directorbot broadcasts, with muted groups hidden.
-- **Mining:** the current session's yield, hold fill and a graph, ported from
-  `EveMiningPanel.qml` and `EveMiningGraph.qml`. Session controls are start,
-  stop, new and rename.
+- **Mining:** the current session's yield, average m³/s, hold fill and a
+  graph, ported from `EveMiningGraph.qml`. Sessions start and end by
+  themselves; Start and Stop are there for overriding. No history: the user
+  never looked at past sessions, so 2026-11-03 removed it from both apps.
 - **Characters:** online or offline, current system, and skill queue state.
 - **Settings:** intel channels, alert range in jumps, cooldown, muted ping
   groups, privacy mode, notification sounds, start at login.
@@ -352,8 +357,9 @@ Small, can be pinned, dark by default:
 
 ### Notifications
 
-- Intel nearby, a fleet ping, a skill finished, the queue running dry, the
-  mining hold full.
+- Intel nearby, a fleet ping, a skill finished, the queue running dry, and
+  anything that stops a miner (`mining::live::Alerts`): hold full, rock
+  depleted, out of range, lasers stopped, out of charges, tackled or shot.
 - On Windows, use the toast's built-in sounds (`ms-winsoundevent:`) so we
   don't need an audio library. Use a distinct sound for intel, because RIFT
   users rely on hearing it.

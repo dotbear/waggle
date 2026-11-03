@@ -14,7 +14,7 @@ use slint::{
         software_renderer::{MinimalSoftwareWindow, RepaintBufferType},
     },
 };
-use waggle::{AppWindow, CharacterItem, MiningInfo, OreRow, view};
+use waggle::{AppWindow, CharacterItem, view};
 use waggle_core::{
     directorbot::{PapSnapshot, PapStats},
     esi::{CharacterPresence, ShipPresence},
@@ -41,7 +41,6 @@ fn main() {
     slint::platform::set_platform(Box::new(Offscreen(window.clone()))).unwrap();
     let ui = AppWindow::new().unwrap();
     view::apply(&ui, &sample());
-    ui.set_mining(sample_mining());
     ui.show().unwrap();
     window.set_size(PhysicalSize::new(WIDTH, HEIGHT));
 
@@ -216,7 +215,8 @@ fn sample() -> view::ViewModel {
                 None,
             ),
         ],
-        mining: None,
+        // The core's own demo session, through the real mapping.
+        mining: Some(waggle_core::mining::demo(now.timestamp())),
         // WAGGLE_SAMPLE_UPDATE=1 shows the update banner too.
         update: std::env::var_os("WAGGLE_SAMPLE_UPDATE").map(|_| waggle::updates::Update {
             version: "0.2.0".to_owned(),
@@ -339,30 +339,5 @@ fn pilot(
         }),
         ship_error: None,
         industry_slots: None,
-    }
-}
-
-fn sample_mining() -> MiningInfo {
-    MiningInfo {
-        active: true,
-        title: "SESSION".into(),
-        total: "48,210 m³".into(),
-        rate: "21,400 m³".into(),
-        hold_percent: 0.72,
-        hold_text: "Hold 21,600 / 30,000 m³".into(),
-        ores: ModelRc::from(Rc::new(VecModel::from(vec![
-            OreRow {
-                name: "Bitumens".into(),
-                amount: "31,050 m³".into(),
-            },
-            OreRow {
-                name: "Zeolites".into(),
-                amount: "12,400 m³".into(),
-            },
-            OreRow {
-                name: "Compressed Bitumens".into(),
-                amount: "4,760 m³".into(),
-            },
-        ]))),
     }
 }
