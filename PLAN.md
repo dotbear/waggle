@@ -298,8 +298,10 @@ Built and checked by driving the Windows 11 VM:
   unless asked.
 
 Not yet done: a real character login and Jabber connection end to end,
-toast sound on real hardware, intel alerts with a real pilot in space, an
-icon better than the placeholder, update checks.
+toast sound on real hardware, intel alerts with a real pilot in space, and
+an icon better than the placeholder. The first friend to install it does the
+real-account test on their own Windows PC; their log folder is what to ask
+for when something fails.
 
 ### Runtime
 

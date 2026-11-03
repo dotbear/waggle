@@ -59,6 +59,14 @@ Once a day Waggle asks GitHub whether a newer release is out, and says so
 in a banner; nothing else is sent anywhere but EVE's servers and your
 Jabber server.
 
+## Something wrong?
+
+Open an [issue](https://github.com/dotbear/waggle/issues) and attach the
+newest file from `%LOCALAPPDATA%\Waggle\data\logs` (paste that path into
+Explorer's address bar). The logs never contain your Jabber password or EVE
+tokens, but they do show your Jabber username, characters and intel
+channels.
+
 ## Thanks to RIFT
 
 Waggle owes a great deal to [RIFT Intel Fusion Tool](https://riftforeve.online)
