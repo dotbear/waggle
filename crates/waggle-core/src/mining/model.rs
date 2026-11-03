@@ -9,6 +9,8 @@ pub struct Preferences {
     pub enabled: bool,
     pub pilots: Vec<String>,
     pub auto_include: bool,
+    /// Ignored: a session always starts with the first yield. Kept so saved
+    /// preferences still load.
     pub auto_start: bool,
     pub window_seconds: u32,
     pub graph_minutes: u32,
@@ -40,7 +42,7 @@ impl Default for Preferences {
             enabled: true,
             pilots: vec![],
             auto_include: true,
-            auto_start: false,
+            auto_start: true,
             window_seconds: 60,
             graph_minutes: 15,
             graph_series: "combined".into(),
@@ -140,7 +142,7 @@ impl Preferences {
                 && self
                     .roots
                     .iter()
-                    .all(|v| v.starts_with('/') && v.len() <= 4096),
+                    .all(|v| std::path::Path::new(v).is_absolute() && v.len() <= 4096),
             "roots must be absolute paths (maximum 20)"
         );
         ensure!(
@@ -221,21 +223,12 @@ pub struct View {
     pub now: i64,
     pub armed: bool,
     pub session: Option<SessionView>,
-    pub history: Vec<History>,
     pub discovered: Vec<Identity>,
     pub problems: Vec<String>,
     pub sources: usize,
     /// What each client is doing right now, from its game log.
     #[serde(default)]
     pub live: Vec<super::live::PilotStatus>,
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct History {
-    pub id: i64,
-    pub label: String,
-    pub start: i64,
-    pub end: Option<i64>,
-    pub m3: f64,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Identity {
@@ -247,23 +240,8 @@ pub struct Identity {
 #[serde(tag = "action", rename_all = "kebab-case")]
 pub enum Command {
     Status,
-    Start {
-        label: Option<String>,
-    },
+    Start { label: Option<String> },
     Stop,
-    New {
-        label: Option<String>,
-        request_id: String,
-    },
-    Rename {
-        id: i64,
-        label: String,
-    },
-    Preferences {
-        value: Box<Preferences>,
-    },
-    Session {
-        id: i64,
-    },
+    Preferences { value: Box<Preferences> },
     Rescan,
 }
