@@ -6922,7 +6922,7 @@ dependencies = [
 
 [[package]]
 name = "waggle"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -6948,7 +6948,7 @@ dependencies = [
 
 [[package]]
 name = "waggle-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -6979,7 +6979,7 @@ dependencies = [
 
 [[package]]
 name = "waggle-data"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
