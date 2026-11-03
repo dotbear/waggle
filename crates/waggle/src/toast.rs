@@ -82,9 +82,13 @@ impl NotificationSink for Desktop {
         use tauri_winrt_notification::{Duration, LoopableSound, Sound, Toast};
         use waggle_core::notify::Urgency;
 
-        let sound = match notification.category {
-            "intel" => Sound::Single(LoopableSound::Alarm2),
-            "ping" => Sound::IM,
+        use waggle_core::notify::{GLYPH_INTEL, GLYPH_MINING, GLYPH_PING};
+        // The glyph says what a notification is about; the category is the
+        // freedesktop one, shared by intel and pings.
+        let sound = match notification.glyph {
+            GLYPH_INTEL => Sound::Single(LoopableSound::Alarm2),
+            GLYPH_PING => Sound::IM,
+            GLYPH_MINING => Sound::Reminder,
             _ => Sound::SMS,
         };
         let mut toast = Toast::new(&self.app_id)

@@ -433,6 +433,132 @@ impl Tracker {
     }
 }
 
+/// Something about a mining pilot worth interrupting them for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AlertKind {
+    HoldFull,
+    Depleted,
+    OutOfRange,
+    TooFar,
+    /// The lasers stopped yielding with no message saying why.
+    Stopped,
+    OutOfCharges,
+    Tackled,
+    Attacked,
+}
+
+impl AlertKind {
+    fn from_reason(reason: StopReason) -> Self {
+        match reason {
+            StopReason::HoldFull => Self::HoldFull,
+            StopReason::Depleted => Self::Depleted,
+            StopReason::OutOfRange => Self::OutOfRange,
+            StopReason::TooFar => Self::TooFar,
+            StopReason::Idle => Self::Stopped,
+        }
+    }
+
+    /// The shortest gap between two alerts of this kind for one pilot. Being
+    /// shot logs a line per hit.
+    fn quiet(self) -> i64 {
+        match self {
+            Self::Attacked => 120,
+            Self::Tackled => 60,
+            _ => 0,
+        }
+    }
+
+    /// What the alert says happened, in a few words.
+    pub fn headline(self) -> &'static str {
+        match self {
+            Self::HoldFull => "Ore hold full",
+            Self::Depleted => "Asteroid depleted",
+            Self::OutOfRange => "Drifted out of range",
+            Self::TooFar => "Asteroid too far away",
+            Self::Stopped => "Lasers stopped",
+            Self::OutOfCharges => "Out of charges",
+            Self::Tackled => "Tackled",
+            Self::Attacked => "Under fire",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Alert {
+    pub pilot: String,
+    pub name: String,
+    pub kind: AlertKind,
+    pub at: i64,
+    /// Who shot or tackled, or which module ran dry.
+    pub detail: Option<String>,
+}
+
+/// Turns the tracker's state into one alert per new event, by comparing
+/// each view with the last. The first view only sets the baseline, so
+/// starting up next to a log full of old stops says nothing.
+#[derive(Debug, Default)]
+pub struct Alerts {
+    started: bool,
+    /// (pilot, kind) → the event last seen, and when it was last announced.
+    seen: HashMap<(String, AlertKind), (i64, i64)>,
+}
+
+/// An event older than this when first seen is history, not news.
+const ALERT_FRESH: i64 = 120;
+
+impl Alerts {
+    pub fn check(&mut self, statuses: &[PilotStatus], now: i64) -> Vec<Alert> {
+        let mut out = Vec::new();
+        for status in statuses {
+            // Combat only matters to a ship that is mining; a pilot out
+            // ratting or in a fleet fight knows they are being shot.
+            let mining = status.lasers.is_some();
+            let mut found: Vec<(AlertKind, i64, Option<String>)> = Vec::new();
+            if let Some(lasers) = &status.lasers
+                && let (Some(reason), Some(since)) = (lasers.reason, lasers.since)
+            {
+                found.push((AlertKind::from_reason(reason), since, None));
+            }
+            let stamped = [
+                (AlertKind::OutOfCharges, &status.out_of_charges, true),
+                (AlertKind::Tackled, &status.tackled, mining),
+                (AlertKind::Attacked, &status.attacked, mining),
+            ];
+            for (kind, stamp, wanted) in stamped {
+                if let Some(stamp) = stamp.as_ref().filter(|_| wanted) {
+                    found.push((kind, stamp.at, Some(stamp.detail.clone())));
+                }
+            }
+            for (kind, at, detail) in found {
+                let key = (status.id.clone(), kind);
+                let previous = self.seen.get(&key).copied();
+                if previous.is_some_and(|(seen, _)| seen == at) {
+                    continue;
+                }
+                let announced = previous.map_or(i64::MIN / 2, |(_, told)| told);
+                // An idle stop is dated by the last yield, so its age says
+                // nothing about when it was noticed.
+                let fresh = kind == AlertKind::Stopped || now - at <= ALERT_FRESH;
+                let due = self.started && fresh && now - announced >= kind.quiet();
+                self.seen
+                    .insert(key, (at, if due { now } else { announced }));
+                if due {
+                    out.push(Alert {
+                        pilot: status.id.clone(),
+                        name: status.name.clone(),
+                        kind,
+                        at,
+                        detail,
+                    });
+                }
+            }
+        }
+        self.started = true;
+        out
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -617,6 +743,108 @@ mod tests {
         assert_eq!(
             tracker.view(T + 33)[0].hold.clone().unwrap().used_m3,
             Some(1_000.0)
+        );
+    }
+
+    fn kinds(alerts: Vec<Alert>) -> Vec<AlertKind> {
+        alerts.into_iter().map(|a| a.kind).collect()
+    }
+
+    #[test]
+    fn each_stop_is_announced_once_and_old_ones_never() {
+        let mut tracker = Tracker::default();
+        let mut alerts = Alerts::default();
+        mine(&mut tracker, T, T + 60, 6);
+        feed(
+            &mut tracker,
+            T + 61,
+            "notify",
+            "Your Miner II deactivates as it finds the resource it was harvesting a pale shadow of its former glory.",
+        );
+        // Starting up next to that stop says nothing about it.
+        assert!(alerts.check(&tracker.view(T + 62), T + 62).is_empty());
+
+        mine(&mut tracker, T + 66, T + 400, 6);
+        assert!(alerts.check(&tracker.view(T + 400), T + 400).is_empty());
+        feed(
+            &mut tracker,
+            T + 401,
+            "notify",
+            "Your Miner II deactivates as it finds the resource it was harvesting a pale shadow of its former glory.",
+        );
+        let found = alerts.check(&tracker.view(T + 402), T + 402);
+        assert_eq!(kinds(found), [AlertKind::Depleted]);
+        assert!(
+            alerts.check(&tracker.view(T + 403), T + 403).is_empty(),
+            "once"
+        );
+
+        feed(
+            &mut tracker,
+            T + 404,
+            "notify",
+            "Your Miner II has completed operations. Ship's cargo hold is full.",
+        );
+        assert_eq!(
+            kinds(alerts.check(&tracker.view(T + 405), T + 405)),
+            [AlertKind::HoldFull]
+        );
+    }
+
+    #[test]
+    fn lasers_that_simply_stop_are_announced() {
+        let mut tracker = Tracker::default();
+        let mut alerts = Alerts::default();
+        mine(&mut tracker, T, T + 60, 6);
+        alerts.check(&tracker.view(T + 61), T + 61);
+        // Three missed cycles, and no message saying why.
+        let found = alerts.check(&tracker.view(T + 90), T + 90);
+        assert_eq!(kinds(found), [AlertKind::Stopped]);
+        assert!(alerts.check(&tracker.view(T + 120), T + 120).is_empty());
+    }
+
+    #[test]
+    fn fire_on_a_miner_is_announced_sparingly() {
+        let mut tracker = Tracker::default();
+        let mut alerts = Alerts::default();
+        alerts.check(&tracker.view(T), T);
+        // Shot while not mining: none of our business.
+        feed(
+            &mut tracker,
+            T + 1,
+            "combat",
+            "120 from Example Hostile - Hobgoblin I - Hits",
+        );
+        assert!(alerts.check(&tracker.view(T + 2), T + 2).is_empty());
+
+        mine(&mut tracker, T + 10, T + 100, 6);
+        feed(
+            &mut tracker,
+            T + 101,
+            "combat",
+            "120 from Example Hostile - Hobgoblin I - Hits",
+        );
+        let found = alerts.check(&tracker.view(T + 101), T + 101);
+        assert_eq!(found[0].kind, AlertKind::Attacked);
+        assert_eq!(found[0].detail.as_deref(), Some("Example Hostile"));
+        // Every hit logs a line; two minutes pass before the next alert.
+        mine(&mut tracker, T + 102, T + 300, 6);
+        feed(
+            &mut tracker,
+            T + 150,
+            "combat",
+            "120 from Example Hostile - Hobgoblin I - Hits",
+        );
+        assert!(alerts.check(&tracker.view(T + 150), T + 150).is_empty());
+        feed(
+            &mut tracker,
+            T + 230,
+            "combat",
+            "120 from Example Hostile - Hobgoblin I - Hits",
+        );
+        assert_eq!(
+            kinds(alerts.check(&tracker.view(T + 230), T + 230)),
+            [AlertKind::Attacked]
         );
     }
 }

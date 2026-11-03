@@ -56,10 +56,6 @@ pub enum Command {
     PauseAlerts(Option<Duration>),
 }
 
-/// A mining session with no yield for this long has ended: one trip, one
-/// session, without anyone having to press Stop.
-const MINING_IDLE_END: i64 = 30 * 60;
-
 /// The keyring this platform has.
 pub fn secrets() -> Arc<dyn PlatformSecrets> {
     #[cfg(windows)]
@@ -191,24 +187,7 @@ async fn run(
         }
     });
     let mut mining = MiningService::restore(&store, roots.clone(), Utc::now().timestamp())?;
-    // Waggle's meter starts by itself. Turned on once, the first time, so
-    // someone who later switches it off stays switched off.
-    if let Ok(view) = mining.view(&store, Utc::now().timestamp())
-        && view.preferences.revision == 0
-        && !view.preferences.auto_start
-    {
-        let mut preferences = view.preferences.clone();
-        preferences.auto_start = true;
-        if let Err(error) = mining.command(
-            &store,
-            waggle_core::mining::Command::Preferences {
-                value: Box::new(preferences),
-            },
-            Utc::now().timestamp(),
-        ) {
-            warn!(%error, "Could not turn on mining auto-start");
-        }
-    }
+    let mut mining_alerts = waggle_core::mining::live::Alerts::default();
     let mut log_monitor = ChatLogMonitor::new(roots.clone(), Duration::from_secs(5));
     match store.log_checkpoints() {
         Ok(checkpoints) => log_monitor.restore_checkpoints(checkpoints),
@@ -383,25 +362,18 @@ async fn run(
                         ship.and_then(|ship| ship.mining_hold.as_ref()).map(|hold| hold.capacity_m3),
                     );
                 }
-                match mining.poll(&store, now) {
-                    Ok(updated) => {
-                        let session = mining.view(&store, now).ok().and_then(|view| view.session);
-                        let active = session.as_ref().is_some_and(|session| session.end.is_none());
+                // The core starts a session with the first yield and ends it
+                // after five quiet minutes; this only shows it and speaks up.
+                match mining.poll(&store, now).and_then(|updated| Ok((updated, mining.view(&store, now)?))) {
+                    Ok((updated, view)) => {
+                        let active = view.session.as_ref().is_some_and(|session| session.end.is_none());
                         changed |= updated || active;
-                        // End a session that has gone quiet.
-                        if let Some(session) = session.filter(|session| session.end.is_none()) {
-                            let last = session
-                                .pilots
-                                .iter()
-                                .filter_map(|pilot| pilot.last_yield)
-                                .max()
-                                .unwrap_or(session.start);
-                            if now - last > MINING_IDLE_END {
-                                info!("Ending a mining session after half an hour without yield");
-                                if let Err(error) = mining.command(&store, waggle_core::mining::Command::Stop, now) {
-                                    warn!(%error, "Could not end the idle mining session");
-                                }
-                                changed = true;
+                        for alert in mining_alerts.check(&view.live, now) {
+                            info!(pilot = alert.name, kind = ?alert.kind, "Mining alert");
+                            if !is_paused(paused_until)
+                                && let Err(error) = notifier.mining(&alert)
+                            {
+                                warn!(%error, "Could not show the mining notification");
                             }
                         }
                     }

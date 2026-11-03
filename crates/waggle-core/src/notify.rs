@@ -10,6 +10,7 @@ use anyhow::Result;
 
 use crate::{
     config::PrivacyMode,
+    mining::live::{Alert as MiningAlert, AlertKind},
     skills::{SkillCompletion, SkillQueue},
     store::{IntelAlert, JabberPing},
 };
@@ -219,6 +220,14 @@ impl<S: NotificationSink> Notifier<S> {
         self.deliver(notification)
     }
 
+    /// Something happened to a pilot's mining: the lasers stopped, the hold
+    /// filled, someone tackled the ship.
+    pub fn mining(&self, alert: &MiningAlert) -> Result<()> {
+        let mut notification = mining_notification(alert);
+        notification.image = alert.pilot.parse().ok().and_then(|id| self.portrait(id));
+        self.deliver(notification)
+    }
+
     /// Announces a trained skill level. `queue` is what that character is left
     /// training, so the notification can say what comes next — or that
     /// nothing does, which is the one thing about a finished skill worth
@@ -286,6 +295,8 @@ pub const GLYPH_PING: &str = "\u{F00E6}";
 pub const GLYPH_INDUSTRY: &str = "\u{F020F}";
 /// md-school
 pub const GLYPH_SKILL: &str = "\u{F0474}";
+/// md-pickaxe
+pub const GLYPH_MINING: &str = "\u{F08B7}";
 
 pub fn intel_notification(alert: &IntelAlert, redacted: bool, exposed: bool) -> Notification {
     let jump_label = if alert.distance == 1 { "jump" } else { "jumps" };
@@ -361,6 +372,40 @@ pub fn queue_line(queue: Option<&SkillQueue>) -> String {
             ),
             None => String::new(),
         },
+    }
+}
+
+pub fn mining_notification(alert: &MiningAlert) -> Notification {
+    let detail = match (alert.kind, alert.detail.as_deref()) {
+        (AlertKind::Tackled | AlertKind::Attacked, Some(who)) => format!(" by {who}"),
+        (AlertKind::OutOfCharges, Some(module)) => format!(": {module}"),
+        _ => String::new(),
+    };
+    let danger = matches!(alert.kind, AlertKind::Tackled | AlertKind::Attacked);
+    Notification {
+        title: format!("{}{detail}", alert.kind.headline()),
+        body: alert.name.clone(),
+        category: if danger { "im.received" } else { "device" },
+        // A ship under attack must not vanish on a timer; a stopped laser is
+        // a chore.
+        urgency: if danger {
+            Urgency::High
+        } else {
+            Urgency::Medium
+        },
+        glyph: if danger { GLYPH_INTEL } else { GLYPH_MINING },
+        icon: if danger {
+            "dialog-warning"
+        } else {
+            "dialog-information"
+        },
+        image: None,
+        // One card per pilot and kind: a second depleted rock replaces the
+        // first rather than stacking.
+        replace_tag: Some(format!("mining:{}:{:?}", alert.pilot, alert.kind)),
+        click: Some(Intent::OpenTab("MINING")),
+        actions: Vec::new(),
+        redacted: false,
     }
 }
 
